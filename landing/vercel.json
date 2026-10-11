@@ -1,29 +1,17 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "redirects": [
-    {
-      "source": "/privacy.html",
-      "destination": "/privacy/",
-      "permanent": true
-    },
-    {
-      "source": "/delete-account.html",
-      "destination": "/delete/",
-      "permanent": true
-    }
+    { "source": "/", "destination": "https://modubokyak.com/", "permanent": true },
+    { "source": "/index.html", "destination": "https://modubokyak.com/", "permanent": true },
+    { "source": "/privacy.html", "destination": "https://modubokyak.com/privacy/", "permanent": true },
+    { "source": "/delete-account.html", "destination": "https://modubokyak.com/delete/", "permanent": true }
   ],
   "headers": [
     {
       "source": "/(.*)",
       "headers": [
-        {
-          "key": "X-Content-Type-Options",
-          "value": "nosniff"
-        },
-        {
-          "key": "Referrer-Policy",
-          "value": "strict-origin-when-cross-origin"
-        }
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" }
       ]
     }
   ]

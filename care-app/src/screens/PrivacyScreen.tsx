@@ -12,7 +12,8 @@ const PRIVACY_ART = require("../../assets/illustrations/privacy-lock.png");
 type Section = { title: string; body: string[] };
 
 // 실제 수집·이용 범위를 그대로 적는다. 앱이 하지 않는 일(제3자 제공, 광고 등)은
-// 하지 않는다고 명시한다. landing/privacy.html 과 같은 내용이어야 한다(스토어 심사에서
+// 하지 않는다고 명시한다. 웹 방침 https://modubokyak.com/privacy/ (modubokyak-com/web 저장소,
+// 원본은 store-assets/common/개인정보처리방침.html)과 같은 내용이어야 한다(스토어 심사에서
 // 앱 안 문구와 웹 방침이 어긋나면 반려된다) — 한쪽을 고치면 다른 쪽도 고친다.
 // 2026-10-08 간편 로그인 반영(로그인 정보·동의 기록·Apple·계정 삭제) — 법률 검토 전 초안.
 // 시행일은 새 빌드 출시일로 바꿀 것.
