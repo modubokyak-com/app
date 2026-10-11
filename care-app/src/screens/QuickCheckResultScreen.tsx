@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { View, Text, ScrollView, StyleSheet, Pressable, Modal, ActivityIndicator, Share, Alert, Platform } from "react-native";
+import { View, Text, ScrollView, StyleSheet, Pressable, Modal, ActivityIndicator, Share, Alert } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ShieldCheck, Stethoscope, MessageCircle, X, SearchX } from "lucide-react-native";
@@ -185,7 +185,7 @@ export function QuickCheckResultScreen() {
   async function share() {
     setShareOpen(false);
     try {
-      await Share.share({ message: buildQuickCheckShareMessage(Platform.OS) });
+      await Share.share({ message: buildQuickCheckShareMessage() });
     } catch (e) {
       Alert.alert("보내지 못했어요", e instanceof Error && e.message ? e.message : "잠시 후 다시 시도해 주세요.");
     }

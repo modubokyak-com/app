@@ -3,14 +3,15 @@
 // 분석 결과는 절대 넣지 않는다("내 분석 결과는 공유되지 않아요").
 // "괜찮은지/안전한지 확인"처럼 안전을 보증하는 표현은 쓰지 않는다(스토어 의료 표현 심사 2026-10-04).
 
-export const APP_STORE_URL = "https://apps.apple.com/app/id6797708328";
-export const PLAY_STORE_URL = "https://play.google.com/store/apps/details?id=com.care.bokyak";
+// 받는 사람은 앱이 없을 수 있다 — 스토어가 아니라 웹 1분 점검으로 보낸다(카카오 공유 A안: 웹 점검 → 앱 설치).
+// 아이폰·안드로이드·PC 어디서 눌러도 같은 화면이 열리고, 웹 결과 아래 「모두의 복약 앱 살펴보기」(/app/)가 앱으로 잇는다.
+// #invite=1 은 받는 사람 화면을 큰 글씨·존댓말로 시작하게 하는 표시뿐이다(약 이름 등은 싣지 않는다).
+// 웹 쪽(landing/check/)도 같은 문장·같은 주소를 보낸다.
+export const WEB_CHECK_INVITE_URL = "https://modubokyak.com/check/#invite=1";
 
-// 받는 사람이 보낸 사람과 같은 플랫폼일 가능성이 높아 보낸 기기의 스토어 링크를 넣는다.
-export function buildQuickCheckShareMessage(platform: "ios" | "android" | string = "ios"): string {
+export function buildQuickCheckShareMessage(): string {
   return [
     "드시는 약과 영양제 중에 주의가 필요한 조합이 있는지 1분이면 확인해 볼 수 있어요.",
-    "모두의 복약 앱에서 1분 복용 점검을 해보세요.",
-    platform === "android" ? PLAY_STORE_URL : APP_STORE_URL,
-  ].join(" ");
+    WEB_CHECK_INVITE_URL,
+  ].join("\n");
 }
