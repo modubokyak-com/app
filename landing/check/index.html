@@ -1,0 +1,2194 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src https://atzosfqrzsfrveympcfj.supabase.co; base-uri 'none'; form-action 'none'">
+<title>1분 복용 점검 — 모두의 복약</title>
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="모두의 복약">
+<meta property="og:title" content="1분 복용 점검 — 모두의 복약">
+<meta property="og:description" content="지금 먹는 약이랑 영양제, 같이 먹어도 괜찮을까요? 가입 없이 1분이면 확인할 수 있어요.">
+<meta property="og:url" content="https://modubokyak.com/check/">
+<meta property="og:locale" content="ko_KR">
+<meta property="og:image" content="https://modubokyak.com/check/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="모두의 복약 1분 복용 점검 — 약이랑 영양제, 같이 먹어도 괜찮을까요?">
+<!--
+  1분 복용 점검 — 모두의 복약 (/check/ 게시용 정본)
+  · 빌드: store-assets/소스/웹사이트-빌드.py 가 이 파일을 웹사이트/check/index.html 로 옮기면서
+    서버 주소·공개키 두 자리(스크립트 0번 구역)를 소스/supabase-공개키.json 값으로 채운다.
+    이 파일에는 값을 적지 않는다.
+  · 판정은 서버(quick_check_v1) 전용이다. 앱(care-app)의 판정 코드를 그대로 옮겼다 — 스크립트 1번 구역.
+    서버에 못 닿으면 연결 안내만 보이고, 대신 판정하지 않는다(앱 2026-09-17 결정과 같다).
+  · 고른 약·나이·상태는 주소(쿼리·해시)에 싣지 않고, 기기 저장소에도 남기지 않는다.
+    「부모님 약도 점검하기」로 한 번 더 돌려도 같다 — 점검 대상(본인/부모님)은 메모리에만 둔다.
+  · 검색 색인 차단: 위 robots 메타만. robots.txt 로는 막지 않는다 — 카카오톡 링크 미리보기 수집기까지 막힐 수 있다.
+  · 들어오는 길: 주소 끝 #invite=1 = 카카오 초대(존댓말·큰 글씨, 화면을 넘겨도 주소에 남긴다).
+    빌드가 /check/senior/ 로 한 벌 더 낼 때 <html data-entry="pharmacy"> 를 붙인다 = 약국 QR.
+  · og:image(/check/og.png)는 빌드가 소스/og-check.png 를 옮겨 놓는다.
+  · 디자인 원본: planning/2026-08-11-진입기능-웹리포트/prototype/index-3040-v2.html
+-->
+<!-- 1×1 투명 PNG. 브라우저가 /favicon.ico 를 따로 요청하지 않게 한다. -->
+<link rel="icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==">
+<style>
+/* ==========================================================================
+   라이트 단일 테마. 앱(care-app/src/theme/tokens.ts)과 같은 팔레트·모서리·그림자를 쓴다.
+   색은 「심각도 전용 채널」로 남긴다 — 브랜드·구분에 색을 쓰지 않는다.
+   hue 70°–170°(초록·연두·민트·틸) 는 이 파일에 하나도 정의하지 않는다.
+   「주의 조합 0건」이 가장 흔한 결과라, 초록 한 점이 「다 괜찮다」로 읽히기 때문이다.
+   (앱은 0건 방패·「약사 확인 권장」·점검 단계 완료 표시에 successGreen 을 쓴다. 웹은 가져오지 않고
+    파랑·회색·남색으로 그린다. 글자는 앱과 같다.)
+   판정 종류 색은 앱 결과 화면(KIND_COLOR)을 따른다:
+     우선 확인 필요 = 빨강 · 복용 시간 확인 필요 = 파랑 · 중복·과다 확인 = 주황 · 주의사항 = 회색
+   글씨는 바탕 위에서 4.5:1 이상이어야 한다. 앱의 주황 #F5A623(2.0:1)·빨강 #E25353(3.8:1)·
+   보조 회색 #64748B(옅은 바탕 위 4.1~4.4:1) 는 글씨로는 모자라서, 아이콘·막대·테두리에는 앱 색을 그대로 쓰고
+   글씨에는 같은 계열의 진한 농도를 쓴다.
+   글씨 크기 바닥은 18px — 앱에서 가장 작은 글씨다. 예외는 「예시 화면」 표식(16px) 하나.
+   ========================================================================== */
+:root {
+  /* ---- 표면·선 — 앱 값 그대로 ---- */
+  --bg:           #F4F7FB;   /* canvas — 페이지 바탕 */
+  --surface:      #FFFFFF;   /* cardBg */
+  --surface-sunk: #E8EEF7;   /* canvasMuted — 눌린 면·회색 배경 */
+  --line:         #D8E5F6;   /* border */
+
+  /* ---- 글씨 ---- */
+  --ink:       #1F2937;      /* text — 본문 */
+  --ink-2:     #5A687D;      /* textSecondary 의 글씨용 진한 농도 (앱값 #64748B 는 canvas 위 4.43:1 로 모자라다) */
+  --gray-mark: #64748B;      /* textSecondary 앱값 — 아이콘·막대에만 쓴다. 글씨에 쓰지 않는다 */
+
+  /* ---- 파랑 ---- */
+  --navy:      #102A5E;      /* primaryNavy — 모든 제목·섹션 제목 */
+  --blue:      #2563EB;      /* primaryBlue — 주 버튼·강조·링크 */
+  --blue-soft: #EBF2FF;      /* primarySoft */
+  --blue-bg:   #EEF5FF;      /* lightBlueBg */
+
+  /* ---- 심각도 4색 — 아이콘·막대·테두리(mark)는 앱 색 그대로, 글씨는 진한 농도, 바탕은 앱 Soft ---- */
+  --sev-warn:  #B42318; --sev-warn-bg:  #FCEBE7; --sev-warn-mark:  #E25353;   /* 우선 확인 필요   dangerRed / dangerSoft */
+  --sev-check: #2563EB; --sev-check-bg: #EBF2FF; --sev-check-mark: #2563EB;   /* 복용 시간 확인   primaryBlue / primarySoft */
+  --sev-time:  #A15C00; --sev-time-bg:  #FEF3E2; --sev-time-mark:  #F5A623;   /* 중복·과다 확인   warningOrange / warningSoft */
+  --sev-info:  #5A687D; --sev-info-bg:  #E8EEF7; --sev-info-mark:  #64748B;   /* 주의사항         textSecondary / canvasMuted */
+
+  --focus: #2563EB; --focus-halo: rgba(37,99,235,.28);
+
+  /* ---- 폰트 (시스템 폰트만 — 외부 요청 없음) ---- */
+  --font-ui:  'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',system-ui,-apple-system,sans-serif;
+  --font-num: -apple-system, BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+
+  /* ---- 간격 (앱 spacing: 4·8·16·24·32·40) ---- */
+  --s-1:4px; --s-2:8px; --s-3:12px; --s-4:16px; --s-5:20px; --s-6:24px; --s-8:32px; --s-10:40px;
+
+  /* ---- 모서리 (앱 radii) ---- */
+  --r-sm:12px; --r-card:24px; --r-btn:999px; /* 앱 BigButton = radii.pill */ --r-hero:32px; --r-pill:999px;
+
+  /* ---- 그림자 (앱 shadows — navy 틴트) ---- */
+  --sh-card:  0 5px 16px rgba(16,42,94,.08);
+  --sh-float: 0 10px 24px rgba(16,42,94,.16);
+  --sh-focus: 0 0 0 3px var(--focus-halo);
+
+  /* ---- 모션 ---- */
+  --d-1:120ms; --d-2:180ms; --d-3:260ms; --d-4:420ms;
+  --e-out: cubic-bezier(.16,1,.3,1);
+  --e-snap:cubic-bezier(.34,1.4,.64,1);
+
+  --min-touch: 56px;      /* 앱 minTouch */
+  --topbar-h:  56px;
+}
+
+/* ==========================================================================
+   베이스
+   ========================================================================== */
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:var(--font-ui); font-size:18px; font-weight:400; line-height:1.6;
+  letter-spacing:0; word-break:keep-all; overflow-wrap:break-word; text-wrap:pretty;
+  -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+  font-synthesis-weight:none;
+}
+button{font:inherit;color:inherit}
+svg{display:block}
+.app{
+  max-width:430px; margin:0 auto; background:var(--bg);
+  min-height:calc(100vh - var(--topbar-h));
+  min-height:calc(100dvh - var(--topbar-h));
+  display:flex; flex-direction:column;
+}
+@media (min-width:486px){
+  .app{border-left:1px solid var(--line);border-right:1px solid var(--line);box-shadow:var(--sh-card)}
+}
+.screen-body{flex:1;padding:var(--s-4) var(--s-6) var(--s-6);display:flex;flex-direction:column;min-width:0}
+
+:focus{outline:none}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:inherit}
+
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{
+    animation-duration:.01ms!important;animation-iteration-count:1!important;
+    /* 지연까지 0 으로 내려야 한다. fill-mode:both 인 스태거는 duration 만 줄이면
+       delay 동안 from 상태(opacity:0)로 멈춰 있어 글자가 사라진 것처럼 보인다. */
+    animation-delay:0ms!important;
+    transition-duration:.01ms!important;scroll-behavior:auto!important;
+  }
+}
+
+.num{font-family:var(--font-num);font-variant-numeric:tabular-nums}
+
+/* ==========================================================================
+   맨 위 줄 — 왼쪽 「모두의 복약」 글자 로고(누르면 회사 소개 /), 오른쪽 이 페이지 이름.
+   카톡·SNS로 처음 온 사람에게 「돌아가기」 화살표를 먼저 보이지 않는다.
+   ========================================================================== */
+.topbar{background:var(--surface);border-bottom:1px solid var(--line)}
+.topbar-in{
+  max-width:430px;margin:0 auto;min-height:var(--topbar-h);padding:0 var(--s-4) 0 var(--s-2);
+  display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;column-gap:var(--s-2);
+}
+.tb-home{
+  display:inline-flex;align-items:center;gap:2px;min-height:var(--min-touch);padding:0 var(--s-2) 0 var(--s-1);
+  font-size:19px;font-weight:800;letter-spacing:-.02em;color:var(--navy);text-decoration:none;border-radius:var(--r-sm);
+}
+.tb-home:hover{text-decoration:underline;text-underline-offset:3px}
+.tb-name{flex:1 1 0;min-width:0;text-align:right;font-size:18px;font-weight:700;line-height:1.3;color:var(--ink-2)}
+
+/* 부모님 약을 점검하는 동안 화면 맨 위에 붙는 얇은 안내 띠 */
+.subject-band{
+  flex:none;display:flex;align-items:center;gap:var(--s-2);min-height:44px;padding:var(--s-2) var(--s-6);
+  background:var(--blue-soft);border-bottom:1px solid var(--line);
+  font-size:18px;font-weight:700;line-height:1.3;color:var(--navy);
+}
+.subject-band svg{color:var(--blue)}
+
+/* ==========================================================================
+   타입 스케일 — 앱 결과·입력 화면 실측치. 바닥 18px.
+   굵기는 400·600·700·800. Malgun Gothic 은 400 과 700 만 가져서 600 은 700 으로, 800 도 700 으로 그려진다
+   (font-synthesis-weight:none 이라 합성 굵기는 얹지 않는다).
+   ========================================================================== */
+.t-body{font-size:18px;line-height:1.55}
+.t-title{font-size:25px;font-weight:800;line-height:36px;letter-spacing:-.025em;color:var(--navy);text-wrap:balance}
+.t-title.an-title{font-size:26px;line-height:36px}
+.t-secondary{color:var(--ink-2)}
+.bold{font-weight:800}
+.stack{display:flex;flex-direction:column}
+.grow{flex:1;min-width:0}
+.gap-xs{gap:var(--s-1)} .gap-sm{gap:var(--s-2)}
+.gap-md{gap:var(--s-4)} .gap-lg{gap:var(--s-6)}
+
+.section-title{
+  font-size:21px;font-weight:800;line-height:1.35;letter-spacing:-.02em;color:var(--navy);
+  margin:var(--s-2) 0 0;flex:none;text-wrap:balance;
+}
+.section-title.first{margin-top:0}
+
+.fx-ico{width:24px;height:24px;flex:none}
+.fx-ico.sm{width:20px;height:20px}
+.fx-ico.lg{width:28px;height:28px}
+.fx-ico.xl{width:44px;height:44px}
+
+.fx-col{display:flex;flex-direction:column;flex:none;min-width:0}
+.fx-row{display:flex;align-items:center;flex:none;min-width:0;flex-wrap:wrap;row-gap:var(--s-1)}
+.fx-center{text-align:center}
+.fx-cap{font-size:18px;line-height:1.45;font-weight:600;color:var(--ink-2)}
+.fx-cap16{font-size:18px;line-height:27px;font-weight:600;color:var(--ink-2);letter-spacing:-.01em}
+.fx-divider{height:1px;background:var(--line);flex:none;margin:var(--s-1) 0}
+.fx-lead{font-size:19px;line-height:1.5;font-weight:600;color:var(--ink)}
+.fx-lead b{font-weight:800;color:var(--navy)}
+.fx-spacer{flex:1;min-height:var(--s-4)}
+
+.fx-strip{display:flex;align-items:stretch;flex:none}
+.fx-strip>div{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--s-1)}
+.fx-strip>div+div{border-left:1px solid var(--line)}
+.fx-strip b{font-family:var(--font-num);font-size:26px;font-weight:800;line-height:1.2;color:var(--navy);font-variant-numeric:tabular-nums}
+.fx-strip span{font-size:18px;color:var(--ink-2);font-weight:600}
+
+.fx-chips{display:flex;flex-wrap:wrap;gap:10px;flex:none}
+.fx-chips.tight{gap:10px}
+
+/* ==========================================================================
+   버튼 / 칩 / 행 카드
+   ========================================================================== */
+.big-btn{
+  min-height:var(--min-touch);width:100%;
+  display:inline-flex;align-items:center;justify-content:center;gap:var(--s-2);
+  padding:var(--s-3) var(--s-5);border:1.5px solid transparent;border-radius:var(--r-btn);
+  font-family:inherit;font-size:20px;font-weight:800;line-height:1.3;letter-spacing:-.02em;text-align:center;text-wrap:balance;cursor:pointer;
+  transition:background-color var(--d-2) var(--e-out),border-color var(--d-2) var(--e-out),
+             box-shadow var(--d-2) var(--e-out),transform var(--d-1) var(--e-out),opacity var(--d-1) var(--e-out);
+}
+.big-btn.primary{background:var(--blue);color:#fff;box-shadow:var(--sh-float)}
+.big-btn.primary:hover{opacity:.92}
+.big-btn.primary:active{opacity:.9;transform:scale(.985)}
+.big-btn.secondary{background:var(--surface);color:var(--navy);border-color:var(--line);box-shadow:var(--sh-card)}
+.big-btn.secondary:hover{background:var(--blue-bg);border-color:var(--blue)}
+.big-btn.secondary:active{transform:scale(.985)}
+.big-btn.ghost{background:transparent;color:var(--navy);border-color:var(--line)}
+.big-btn.ghost:hover{background:var(--surface-sunk)}
+.big-btn.sm{font-size:18px;font-weight:700;padding:0 var(--s-4);width:auto}
+.big-btn:disabled{opacity:.45;cursor:default;transform:none;box-shadow:none}
+.big-btn.primary:disabled:hover{opacity:.45}
+/* 링크로 쓰는 큰 버튼 — 결과 아래 「앱 살펴보기」(/app/) */
+a.big-btn{text-decoration:none}
+
+/* 바닥 줄 — 회사명과 방침·약관. 이 페이지는 고른 약·연령대·상태를 점검 서버로 보내므로 늘 보이게 둔다. */
+.site-foot{
+  max-width:430px;margin:0 auto;padding:var(--s-5) var(--s-6) calc(var(--s-6) + env(safe-area-inset-bottom));
+  border-top:1px solid var(--line);background:var(--bg);
+  display:flex;flex-wrap:wrap;align-items:center;column-gap:var(--s-4);row-gap:var(--s-1);
+  font-size:18px;line-height:1.5;color:var(--ink-2);
+}
+.site-foot a{color:var(--ink-2);text-underline-offset:3px;min-height:var(--min-touch);display:inline-flex;align-items:center}
+.site-foot a:focus-visible{box-shadow:var(--sh-focus)}
+@media (min-width:486px){
+  .site-foot{border-left:1px solid var(--line);border-right:1px solid var(--line)}
+}
+
+.chip{
+  min-height:var(--min-touch);max-width:100%;display:inline-flex;align-items:center;gap:6px;padding:0 var(--s-4);
+  background:var(--surface);color:var(--ink);border:1.5px solid var(--line);
+  border-radius:var(--r-pill);font-family:inherit;font-size:18px;font-weight:700;line-height:1.3;letter-spacing:-.015em;cursor:pointer;
+  transition:background-color var(--d-2) var(--e-out),border-color var(--d-2) var(--e-out),
+             color var(--d-2) var(--e-out),transform var(--d-1) var(--e-snap);
+}
+.chip:hover{background:var(--blue-bg)}
+.chip:active{transform:scale(.97)}
+.chip.selected{background:var(--blue-soft);border-color:var(--blue);color:var(--blue)}
+.chip.add{border-style:dashed;color:var(--ink-2)}
+.chip.add svg{color:var(--blue)}
+/* 직접 적은 이름 — 고른 칩으로 보이고, 오른쪽 × 로 뺀다 */
+.chip.custom{padding:0 0 0 var(--s-4);gap:2px;cursor:default;overflow-wrap:anywhere;text-align:left}
+.chip.custom:hover{background:var(--blue-soft)}
+.chip.custom:active{transform:none}
+/* 「먹는 영양제 없음」「복용 중인 약 없음」 — 앱처럼 목록 아래 한 줄 전체 */
+.chip.none-chip{width:100%;justify-content:center;background:var(--surface-sunk);color:var(--navy)}
+.chip.none-chip.selected{background:var(--blue-soft);border-color:var(--blue);color:var(--blue)}
+
+.row-card{
+  display:flex;align-items:center;gap:var(--s-3);min-height:var(--min-touch);
+  background:var(--surface);border:1.5px solid var(--line);border-radius:var(--r-card);
+  padding:var(--s-4);flex:none;width:100%;text-align:left;font-family:inherit;color:inherit;
+  box-shadow:var(--sh-card);
+  transition:border-color var(--d-2) var(--e-out),background-color var(--d-2) var(--e-out);
+}
+button.row-card{cursor:pointer}
+button.row-card:hover{border-color:var(--blue);background:var(--blue-bg)}
+.row-card .t-body{font-size:19px;font-weight:800;line-height:1.35;color:var(--navy)}
+
+.icon-box{
+  width:44px;height:44px;border-radius:var(--r-sm);
+  background:var(--blue-soft);
+  display:flex;align-items:center;justify-content:center;flex:none;color:var(--blue);
+}
+
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-card);
+      padding:var(--s-5);box-shadow:var(--sh-card);flex:none}
+.card.elevated{background:var(--blue-bg)}
+
+/* 카드 하나짜리 제안 — 「부모님 약도 같이 점검해 보세요」「가족·친구에게 알려주기」 */
+.card.promo{display:flex;flex-direction:column;gap:var(--s-3)}
+.promo-head{display:flex;align-items:center;gap:var(--s-3)}
+.promo-title{flex:1;min-width:0;font-size:21px;font-weight:800;line-height:1.35;letter-spacing:-.02em;color:var(--navy);text-wrap:balance}
+.promo-desc{font-size:18px;line-height:27px;font-weight:600;color:var(--ink-2)}
+.card.promo .big-btn{margin-top:var(--s-1)}
+
+.input{
+  background:var(--surface);border:1.5px solid var(--line);border-radius:var(--r-btn);
+  font-size:18px;font-family:inherit;color:var(--ink);padding:14px;min-height:var(--min-touch);width:100%;
+}
+.input::placeholder{color:var(--ink-2)}
+.input:focus-visible{border-color:var(--blue)}
+
+.warn-banner{
+  display:flex;gap:var(--s-2);align-items:flex-start;
+  background:var(--sev-warn-bg);border:1px solid var(--sev-warn-mark);border-radius:var(--r-card);
+  padding:var(--s-4);color:var(--ink);font-size:18px;line-height:1.5;flex:none;
+}
+.warn-banner svg{flex:none;margin-top:2px;color:var(--sev-warn)}
+.warn-banner.caution{background:var(--sev-time-bg);border-color:var(--sev-time-mark)}
+.warn-banner.caution svg{color:var(--sev-time)}
+
+.wf-x{background:none;border:none;font-family:inherit;cursor:pointer;padding:0 var(--s-4) 0 var(--s-2);
+      color:var(--blue);display:inline-flex;align-items:center;align-self:stretch;min-height:var(--min-touch);
+      border-radius:0 var(--r-pill) var(--r-pill) 0}
+
+/* ==========================================================================
+   진행 표시 — 앱 seg(5px, 선택은 primaryBlue)
+   ========================================================================== */
+.wf-steps{display:flex;align-items:center;gap:6px;flex:1;min-width:0}
+.wf-steps .s{height:5px;flex:1 1 0;min-width:20px;border-radius:var(--r-pill);background:var(--line)}
+.wf-steps .s.on,.wf-steps .s.done{background:var(--blue)}
+.wf-steplabel{font-family:var(--font-num);font-size:18px;font-weight:700;color:var(--blue);flex:none}
+
+/* ==========================================================================
+   히어로 / 신뢰 목록
+   ========================================================================== */
+.wf-hero{flex:none;background:var(--navy);border-radius:var(--r-hero);padding:var(--s-6);
+         display:flex;flex-direction:column;gap:var(--s-3);box-shadow:var(--sh-float)}   /* 앱 HomeScreen hero: navy·32px·24px 안쪽 여백·floating 그림자 */
+.h-eyebrow{font-size:18px;font-weight:700;color:#A9C4F5;letter-spacing:0}
+.h-title{font-size:30px;font-weight:800;line-height:1.3;letter-spacing:-.03em;color:#FFFFFF;text-wrap:balance}
+.h-sub{font-size:18px;line-height:1.6;color:#D6E2FA}
+
+.wf-trust{
+  display:flex;flex-direction:column;flex:none;
+  background:var(--surface);border:1px solid var(--line);border-radius:var(--r-card);
+  padding:var(--s-1) var(--s-4);box-shadow:var(--sh-card);
+}
+.wf-trust>div{
+  display:grid;grid-template-columns:auto 1fr;column-gap:var(--s-3);align-items:center;
+  padding:var(--s-3) 0;
+}
+.wf-trust>div+div{border-top:1px solid var(--line)}
+.wf-trust svg{grid-row:1 / span 2;color:var(--blue)}
+.wf-trust b{font-size:18px;font-weight:800;line-height:1.35;color:var(--navy)}
+.wf-trust span{font-size:18px;font-weight:600;line-height:1.4;color:var(--ink-2)}
+
+/* ==========================================================================
+   랜딩 결과 미리보기 — 「1분 뒤 이런 걸 받아요」
+   결과 카드의 생김새만 보여 준다. 내용이 없는 막대라 읽을 것이 없고, 「예시 화면」 라벨을 박는다.
+   칩 글자는 앱 판정 태그 그대로다.
+   ========================================================================== */
+.lp{flex:none;display:flex;flex-direction:column;gap:var(--s-2)}
+.lp-head{display:flex;align-items:baseline;gap:2px var(--s-2);flex-wrap:wrap}
+.lp-head b{font-size:18px;font-weight:800;color:var(--navy);flex:none}
+.lp-head span{font-size:18px;font-weight:600;color:var(--ink-2);line-height:1.45;min-width:0}
+.lp-frame{
+  position:relative;overflow:hidden;height:148px;
+  border:1px solid var(--line);border-radius:var(--r-card);
+  background:var(--surface);box-shadow:var(--sh-card);
+}
+.lp-stage{
+  height:100%;overflow:hidden;   /* 틀 높이에 맞춰 자르고, 흐림도 그 높이 기준으로 걸린다 */
+  padding:var(--s-3);display:flex;flex-direction:column;gap:var(--s-2);
+  -webkit-mask-image:linear-gradient(180deg,#000 0 58%,rgba(0,0,0,.34) 82%,rgba(0,0,0,0) 100%);
+          mask-image:linear-gradient(180deg,#000 0 58%,rgba(0,0,0,.34) 82%,rgba(0,0,0,0) 100%);
+}
+.lp-card{position:relative;flex:none;display:flex;flex-direction:column;gap:6px;background:var(--surface);
+  border:1px solid var(--line);border-radius:var(--r-sm);padding:var(--s-2) var(--s-3) var(--s-2) 18px;overflow:hidden}
+.lp-card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--_m)}
+.lp-chip{align-self:flex-start;font-size:18px;font-weight:700;line-height:1.3;padding:2px 12px;border-radius:var(--r-pill);
+  background:var(--_bg);color:var(--_fg)}
+.lp-bar{display:block;height:8px;border-radius:var(--r-pill);background:var(--surface-sunk)}
+.lp-bar.w1{width:44%} .lp-bar.w2{width:86%} .lp-bar.w3{width:66%}
+.lp-mark{
+  position:absolute;right:var(--s-3);bottom:var(--s-3);z-index:2;
+  font-size:16px;font-weight:700;line-height:1.3;letter-spacing:.01em;color:var(--navy);
+  background:var(--surface);border:1px solid var(--line);
+  border-radius:var(--r-pill);padding:2px 12px;box-shadow:var(--sh-card);
+}
+
+/* 판정 종류 → 색. 앱 결과 화면 KIND_COLOR 와 같은 짝 */
+.k-priority{--_m:var(--sev-warn-mark); --_fg:var(--sev-warn); --_bg:var(--sev-warn-bg)}
+.k-timing  {--_m:var(--sev-check-mark);--_fg:var(--sev-check);--_bg:var(--sev-check-bg)}
+.k-overlap {--_m:var(--sev-time-mark); --_fg:var(--sev-time); --_bg:var(--sev-time-bg)}
+.k-caution {--_m:var(--sev-info-mark); --_fg:var(--sev-info); --_bg:var(--sev-info-bg)}
+
+/* ==========================================================================
+   하단 CTA 바
+   ========================================================================== */
+.wf-cta{
+  flex:none;background:var(--surface);border-top:1px solid var(--line);
+  padding:var(--s-3) var(--s-6) calc(var(--s-4) + env(safe-area-inset-bottom));
+  position:sticky;bottom:0;z-index:40;box-shadow:0 -4px 12px rgba(16,42,94,.06);
+}
+.wf-cta .c-count{font-size:18px;line-height:1.4;font-weight:600;color:var(--ink-2);margin-bottom:var(--s-2);
+                 display:flex;align-items:flex-start;gap:6px}
+.wf-cta .c-count b{color:var(--blue);font-family:var(--font-num);font-weight:800}
+.wf-cta .c-count svg{color:var(--blue);margin-top:2px}
+
+/* ==========================================================================
+   점검 중 — 앱 QuickCheckAnalyzingScreen (제목 26px, 단계 줄 20px)
+   ========================================================================== */
+.wf-scan{width:104px;height:104px;margin:0 auto;flex:none;position:relative;
+         display:flex;align-items:center;justify-content:center;color:var(--blue)}
+.wf-scan .scan-ring{position:absolute;inset:0;width:100%;height:100%}
+.wf-scan .scan-track{fill:none;stroke:var(--blue-soft);stroke-width:4}
+.wf-scan .scan-sweep{fill:none;stroke:var(--blue);stroke-width:4;stroke-linecap:round;
+  stroke-dasharray:60 220;transform-origin:50% 50%;animation:sweep 1400ms linear infinite}
+.wf-scan.off{color:var(--gray-mark)}
+.wf-scan.off .scan-track{stroke:var(--line)}
+.wf-scan.off .scan-sweep{display:none}
+@keyframes sweep{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+.wf-lines{display:flex;flex-direction:column;gap:var(--s-2);flex:none}
+.wf-line{
+  display:flex;align-items:center;gap:var(--s-4);min-height:64px;padding:0 var(--s-4);
+  background:var(--surface);border:1px solid var(--line);border-radius:var(--r-card);box-shadow:var(--sh-card);
+  font-size:20px;font-weight:700;line-height:1.35;color:var(--ink-2);
+}
+.wf-line.done{color:var(--ink);border-color:var(--blue)}
+.wf-line.now{color:var(--navy)}
+.wf-line .l-dot{
+  width:36px;height:36px;border-radius:var(--r-pill);flex:none;
+  background:var(--surface-sunk);
+  display:flex;align-items:center;justify-content:center;
+}
+.wf-line.done .l-dot{background:var(--blue);color:#fff}
+.wf-line.done .l-dot svg{width:22px;height:22px}
+.wf-line.now .l-dot{background:var(--surface);border:3px solid var(--blue)}
+
+/* ==========================================================================
+   결과 제목 블록 — 앱 결과 화면: 제목 28px/38px/800 navy + 대조한 이름 한 줄
+   확인 필요 N건 / 확인된 주의 조합이 없어요 / 복용 조합 점검이 끝났어요.
+   건수가 있어도 빨강을 쓰지 않는다 — 어떤 종류인지는 아래 카드의 색이 말한다.
+   ========================================================================== */
+.wf-verdict{flex:none;display:flex;flex-direction:column;gap:var(--s-2)}
+.wf-verdict .v-title{font-size:28px;font-weight:800;line-height:38px;letter-spacing:-.03em;color:var(--navy);text-wrap:balance}
+.wf-verdict .v-n{font-variant-numeric:tabular-nums}
+.wf-verdict .v-names{font-size:18px;font-weight:600;line-height:26px;color:var(--ink-2)}
+
+/* 점검하지 못한 항목 */
+.nc-box{background:var(--sev-time-bg);border:1px solid var(--sev-time-mark);border-radius:var(--r-card);
+        padding:var(--s-4);display:flex;flex-direction:column;gap:var(--s-2);flex:none}
+.nc-head{display:flex;align-items:center;gap:var(--s-2);font-size:20px;font-weight:800;line-height:1.35;color:var(--navy)}
+.nc-head svg{color:var(--sev-time-mark)}
+.nc-names{font-size:18px;font-weight:700;line-height:26px;color:var(--ink)}
+.nc-desc{font-size:18px;line-height:27px;color:var(--ink-2)}
+.note{font-size:18px;line-height:26px;color:var(--ink-2);flex:none;margin:0}
+
+/* 0건 / 조합 부족 */
+.safe{display:flex;flex-direction:column;align-items:center;gap:var(--s-2);text-align:center;padding:var(--s-6) var(--s-5)}
+.card.safe .fx-ico{width:44px;height:44px;color:var(--gray-mark)}   /* 방패는 중립 회색 — 초록·파랑 체크로 「다 괜찮다」처럼 읽히게 하지 않는다 */
+.safe-title{font-size:24px;font-weight:800;line-height:1.35;color:var(--navy)}
+.safe-desc{font-size:19px;line-height:28px;color:var(--ink-2)}
+.safe-caveat{font-size:18px;line-height:26px;font-weight:600;color:var(--ink-2);border-top:1px solid var(--line);
+             padding-top:var(--s-3);margin-top:var(--s-1);align-self:stretch}
+
+/* ==========================================================================
+   판정 카드 — 앱 FindingCard: 흰 카드, 24px 모서리, 카드 그림자. 종류별 묶음 안에서 16px 간격.
+   왼쪽 막대는 종류 색(앱 색 그대로).
+   ========================================================================== */
+.findings{display:flex;flex-direction:column;gap:var(--s-4);flex:none}
+.wf-find{position:relative;overflow:hidden;background:var(--surface);border:1px solid var(--line);
+         border-radius:var(--r-card);box-shadow:var(--sh-card);
+         padding:var(--s-4) var(--s-4) var(--s-4) 22px;
+         display:flex;flex-direction:column;gap:var(--s-2)}
+.wf-find::before{content:"";position:absolute;left:0;top:0;bottom:0;width:6px;background:var(--_m)}
+.f-lv{display:inline-flex;align-items:center;gap:6px;align-self:flex-start;min-height:32px;padding:0 12px;
+      border-radius:var(--r-pill);background:var(--_bg);color:var(--_fg);font-size:18px;font-weight:700;line-height:1.2}
+.f-lv svg{width:20px;height:20px}
+.wf-pair{font-size:23px;font-weight:800;line-height:1.35;letter-spacing:-.02em;color:var(--navy);margin-top:var(--s-1)}
+.wf-pair .p-x{color:var(--ink-2);font-weight:700}
+.f-what{font-size:19px;line-height:29px;font-weight:600;color:var(--ink);white-space:pre-line}
+.f-sep{display:flex;align-items:center;gap:6px;font-size:18px;line-height:26px;font-weight:700;color:var(--navy)}
+.f-sep svg{color:var(--blue)}
+.f-src{font-size:18px;line-height:26px;color:var(--ink-2)}
+.f-foot{display:flex;flex-wrap:wrap;align-items:center;gap:6px var(--s-2);
+        border-top:1px solid var(--line);padding-top:var(--s-3);margin-top:var(--s-1)}
+.f-pharm{display:inline-flex;align-items:center;min-height:32px;font-size:18px;font-weight:700;line-height:1.2;padding:0 12px;
+         border-radius:var(--r-pill);background:var(--surface-sunk);color:var(--navy);flex:none}
+.f-ev{font-size:18px;font-weight:700;color:var(--ink-2);flex:none}
+.f-note{font-size:18px;line-height:24px;font-weight:600;color:var(--ink-2);flex:1 1 160px;min-width:0}
+
+/* ==========================================================================
+   고지 / 비교표
+   ========================================================================== */
+.wf-disclaim{
+  flex:none;background:var(--surface-sunk);border:1px solid var(--line);border-radius:var(--r-card);
+  padding:var(--s-4);font-size:18px;line-height:26px;color:var(--ink);
+}
+.wf-disclaim b{color:var(--navy);font-weight:800}
+.nb-head{font-size:18px;font-weight:800;color:var(--navy);margin-bottom:var(--s-1)}
+.nb-list{margin:0;padding-left:1.15em;display:flex;flex-direction:column;gap:6px}
+
+.notice-box{display:flex;gap:var(--s-2);align-items:flex-start;flex:none;
+  background:var(--blue-bg);border-radius:var(--r-card);
+  padding:var(--s-4);font-size:19px;line-height:28px;color:var(--navy)}
+.notice-box svg{flex:none;margin-top:2px;color:var(--navy)}
+.notice-box b{font-weight:800}
+
+.wf-compare{display:flex;flex-direction:column;flex:none}
+.wf-compare .cp-row{display:flex;align-items:center;gap:var(--s-2);padding:10px 0;font-size:18px;line-height:1.4}
+.wf-compare .cp-row + .cp-row{border-top:1px solid var(--line)}
+.wf-compare .cp-name{flex:1;min-width:0;color:var(--ink);font-weight:600}
+.wf-compare .cp-web,.wf-compare .cp-app{width:48px;flex:none;display:flex;align-items:center;justify-content:center}
+.wf-compare .cp-web svg{width:22px;height:22px;color:var(--gray-mark)}
+.wf-compare .cp-app svg{width:22px;height:22px;color:var(--blue)}
+.wf-compare .cp-head{font-size:18px;font-weight:800;color:var(--ink-2);padding-top:0;padding-bottom:var(--s-2)}
+.wf-compare .cp-head .cp-app{color:var(--blue)}
+
+/* ==========================================================================
+   바텀시트 / 딤 / 토스트
+   ========================================================================== */
+.wf-dim{position:fixed;inset:0;z-index:300;background:rgba(16,42,94,.28);border:none;padding:0;
+        animation:fade-in var(--d-3) var(--e-out)}
+.wf-sheet{
+  position:fixed;left:50%;bottom:0;transform:translateX(-50%);width:100%;max-width:430px;z-index:310;
+  background:var(--surface);border-radius:var(--r-hero) var(--r-hero) 0 0;box-shadow:var(--sh-float);
+  padding:var(--s-3) var(--s-6) calc(var(--s-6) + env(safe-area-inset-bottom));
+  display:flex;flex-direction:column;gap:var(--s-4);max-height:86vh;overflow-y:auto;
+  animation:sheet-in var(--d-3) var(--e-out);
+}
+.wf-sheet .t-title{font-size:22px;line-height:32px}
+.wf-sheet form{display:flex;flex-direction:column;gap:var(--s-2)}
+.sh-grab{width:36px;height:4px;border-radius:var(--r-pill);background:var(--line);
+         margin:0 auto var(--s-2);flex:none}
+@keyframes sheet-in{from{transform:translate(-50%,24px);opacity:.6}to{transform:translate(-50%,0);opacity:1}}
+@keyframes fade-in{from{opacity:0}to{opacity:1}}
+
+.wf-toast{
+  position:fixed;left:50%;bottom:92px;transform:translateX(-50%);z-index:400;
+  background:var(--navy);color:#fff;border-radius:var(--r-card);padding:var(--s-3) var(--s-5);
+  font-size:18px;font-weight:700;line-height:1.4;max-width:92vw;text-align:center;
+  box-shadow:var(--sh-float);
+}
+.wf-toast[hidden]{display:none}
+
+/* ==========================================================================
+   결과 진입 스태거
+   ========================================================================== */
+.stagger>*{animation:rise var(--d-4) var(--e-out) both}
+.stagger>:nth-child(1){animation-delay:0ms}   .stagger>:nth-child(2){animation-delay:40ms}
+.stagger>:nth-child(3){animation-delay:80ms}  .stagger>:nth-child(4){animation-delay:120ms}
+.stagger>:nth-child(5){animation-delay:160ms} .stagger>:nth-child(6){animation-delay:200ms}
+.stagger>:nth-child(7){animation-delay:240ms} .stagger>:nth-child(n+8){animation-delay:280ms}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+/* 포커스 후광은 컴포넌트 규칙보다 뒤에 와야 이긴다 (.big-btn.secondary 등이 box-shadow 를 쓴다) */
+.big-btn:focus-visible,.chip:focus-visible,.row-card:focus-visible,
+.tb-home:focus-visible{box-shadow:var(--sh-focus)}
+
+/* ==========================================================================
+   좁은 화면(320~359px) — 옆 여백을 줄이고 히어로 제목을 한 단계 낮춘다
+   ========================================================================== */
+@media (max-width:359px){
+  .screen-body{padding-left:var(--s-4);padding-right:var(--s-4)}
+  .subject-band,.wf-cta{padding-left:var(--s-4);padding-right:var(--s-4)}
+  .h-title{font-size:26px}
+}
+
+/* ==========================================================================
+   「글자 크게」 — 초대 링크로 들어온 사람은 처음부터 켜져 있다.
+   본문 글씨를 한 단계(+2px) 올린다. 제목·카드 제목은 이미 크다.
+   ========================================================================== */
+html.big-text .fx-cap,html.big-text .fx-cap16,html.big-text .h-sub,html.big-text .h-eyebrow,
+html.big-text .note,html.big-text .nc-desc,html.big-text .nc-names,html.big-text .promo-desc,
+html.big-text .f-src,html.big-text .f-note,html.big-text .f-ev,html.big-text .f-sep,html.big-text .v-names,
+html.big-text .wf-trust span,html.big-text .wf-trust b,html.big-text .lp-head span,html.big-text .lp-head b,
+html.big-text .wf-cta .c-count{font-size:20px}
+html.big-text .f-what,html.big-text .safe-desc,html.big-text .notice-box,html.big-text .fx-lead,
+html.big-text .wf-disclaim,html.big-text .safe-caveat,html.big-text .wf-compare .cp-row{font-size:20px}
+html.big-text .chip,html.big-text .big-btn.sm{font-size:20px}
+html.big-text .f-lv,html.big-text .f-pharm{font-size:20px}
+</style>
+</head>
+<body>
+
+<!-- 아이콘 스프라이트 — Lucide(ISC) / Feather(MIT) 계열 패스를 인라인. 외부 요청 없음.
+     규격 통일: viewBox 0 0 24 24 / fill none / stroke currentColor / stroke-width 1.75 -->
+<svg style="display:none" aria-hidden="true">
+  <symbol id="i-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+  <symbol id="i-chevron-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></symbol>
+  <symbol id="i-chevron-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></symbol>
+  <symbol id="i-alert-triangle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m10.29 3.86-8.18 14a2 2 0 0 0 1.71 3h16.36a2 2 0 0 0 1.71-3l-8.18-14a2 2 0 0 0-3.42 0Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></symbol>
+  <symbol id="i-alert-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4"/><path d="M12 16h.01"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></symbol>
+  <symbol id="i-check-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M21.8 10A10 10 0 1 1 17 3.34"/><path d="m9 11 3 3L22 4"/></symbol>
+  <symbol id="i-shield-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1Z"/><path d="m9 12 2 2 4-4"/></symbol>
+  <symbol id="i-file-text" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M15 2v5h5"/><path d="M9 13h6"/><path d="M9 17h6"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-layers" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="12" height="12" rx="2"/><path d="M9 21h10a2 2 0 0 0 2-2V9"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="M6 6l12 12"/></symbol>
+  <symbol id="i-smartphone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="2.5"/><path d="M11 18.5h2"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4 20-7Z"/></symbol>
+  <symbol id="i-minus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M6 12h12"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></symbol>
+</svg>
+
+<header class="topbar">
+  <div class="topbar-in">
+    <a class="tb-home" href="/" aria-label="모두의 복약 — 회사 소개로">모두의 복약</a>
+    <span class="tb-name">1분 복용 점검</span>
+  </div>
+</header>
+
+<main class="app" id="app"></main>
+<footer class="site-foot">
+  <span>주식회사 안팜</span>
+  <a href="/privacy/">개인정보처리방침</a>
+  <a href="/terms/">이용약관</a>
+</footer>
+<div id="sheet-root"></div>
+<div id="toast" class="wf-toast" role="status" aria-live="polite" hidden></div>
+
+<script>
+"use strict";
+(function () {
+
+/* ==========================================================================
+   0. 서버 — 빌드(소스/웹사이트-빌드.py)가 소스/supabase-공개키.json 값으로 채운다.
+      앱 care-app/app.json 의 expo.extra 와 같은 값이다. publishable 키는 Supabase 가
+      클라이언트 공개용으로 만든 키이고, 앱 바이너리에도 이미 들어 있다.
+   ========================================================================== */
+const SUPABASE_URL = 'https://atzosfqrzsfrveympcfj.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_IxiFvJXOgllELr1E69-u-Q_34H6Oz8a';
+
+/* supabase.rpc 대역. 앱은 supabase-js(인증 세션 없음 — persistSession:false)로 이 키를 실어
+   POST {url}/rest/v1/rpc/{함수} 를 부른다. 같은 요청을 fetch 로 보내고, supabase-js 처럼
+   { data, error } 로 돌려준다 — 실패를 던지지 않고 error 에 담는다(아래 runServerCheck 가 던진다). */
+function rpc(fn, args) {
+  if (!/^https:\/\//.test(SUPABASE_URL) || SUPABASE_PUBLISHABLE_KEY.length < 20 ||
+      SUPABASE_PUBLISHABLE_KEY.charAt(0) === '{') {
+    return Promise.resolve({ data: null, error: new Error('서버 주소가 비어 있습니다 (빌드 전 원본)') });
+  }
+  return fetch(SUPABASE_URL + '/rest/v1/rpc/' + fn, {
+    method: 'POST',
+    headers: {
+      'apikey': SUPABASE_PUBLISHABLE_KEY,
+      'Authorization': 'Bearer ' + SUPABASE_PUBLISHABLE_KEY,
+      'Content-Type': 'application/json',
+      'Accept': 'application/json'
+    },
+    body: JSON.stringify(args)
+  }).then(function (res) {
+    return res.text().then(function (text) {
+      if (!res.ok) return { data: null, error: new Error(fn + ' HTTP ' + res.status) };
+      if (!text) return { data: null, error: null };
+      try { return { data: JSON.parse(text), error: null }; }
+      catch (e) { return { data: null, error: e }; }
+    });
+  }, function (e) { return { data: null, error: e }; });
+}
+
+
+/* ==========================================================================
+   1. 앱 판정 엔진 이식본 — care-app/src/lib (origin/main @ d257866, 2026-09-20)
+
+   TS 에서 타입만 걷어냈다. 로직은 한 줄도 바꾸지 않는다.
+   앱 쪽이 바뀌면 여기도 같은 줄을 같이 바꾼다 — 같은 입력이면 앱과 같은 결과가 나와야 한다.
+   (카카오 공유로 들어온 사람이 웹에서 점검하고 앱을 설치하면 두 결과를 연달아 본다.)
+   바꾼 곳은 딱 하나: runServerCheck 안의 supabase.rpc(...) 를 위 rpc(...) 로 갈았다.
+
+   판정은 서버 전용이다(앱 2026-09-17 결정). 이 파일에는 규칙 데이터가 없고,
+   서버에 못 닿으면 대신 판정하지 않는다.
+   ========================================================================== */
+
+/* ---- quickCheckLabels.ts — 버튼 라벨 정본 (앱 시안 V8 그대로) ---- */
+const SUPPLEMENT_PRESETS = [
+  "오메가3", "비타민D", "마그네슘", "유산균", "종합비타민", "철분", "루테인", "밀크씨슬",
+];
+/** "더 보기"를 누르면 SUPPLEMENT_PRESETS 뒤에 이어 붙는 영양제 */
+const SUPPLEMENT_MORE = ["콜라겐", "아연", "홍삼", "단백질보충제"];
+
+const MEDICINE_PRESETS = [
+  "갑상선약", "혈압약", "고지혈증약", "위장약", "통증·소염제", "알레르기약", "피임약", "항우울제", "여드름약",
+];
+
+// 3/3 기본 정보 — 연령대(단일 선택), 해당 항목(복수 선택, "해당 없음"은 나머지를 밀어낸다).
+const AGES = ["20대", "30대", "40대", "50대", "60대 이상"];
+const CONDS = ["임신·수유 중", "신장질환", "간질환", "해당 없음"];
+const NONE_CONDITION = "해당 없음";
+
+/** 종류명 칩 전체(영양제 + 더 보기 + 복용약). 서버 응답에서 칩이 제대로 풀렸는지 검증할 때 쓴다. */
+const PRESET_LABELS = new Set([
+  ...SUPPLEMENT_PRESETS, ...SUPPLEMENT_MORE, ...MEDICINE_PRESETS,
+]);
+
+/* ---- quickCheck.ts ---- */
+const NONE_SUPPLEMENT = "먹는 영양제 없음";
+const NONE_MEDICINE = "복용 중인 약 없음";
+
+/** 칩으로 고른 종류명인가. */
+function isPreset(name) {
+  return PRESET_LABELS.has(name);
+}
+
+/** 결과 화면 "점검하지 못한 항목" 설명. 전부 종류명 칩이면 제품 검색을 권해도 소용없다(자료 자체가 없다). */
+function unmatchedDescription(unmatched) {
+  if (unmatched.length > 0 && unmatched.every(isPreset)) {
+    return "아직 점검 자료에 없는 종류예요. 약사에게 함께 말씀해 주세요.";
+  }
+  return "식약처 자료에서 제품을 찾지 못해 성분을 알 수 없었어요. 약 봉투나 통에 적힌 제품 이름으로 검색하면 확인할 수 있어요.";
+}
+
+// 칩을 누른다. "없음"은 나머지를 전부 지우고 혼자 남는다(다시 누르면 빈 목록).
+// 실제 항목을 고르면 "없음"은 빠지고 그 항목이 토글된다.
+function toggleItem(list, label, noneLabel) {
+  if (label === noneLabel) {
+    return list.includes(noneLabel) ? [] : [noneLabel];
+  }
+  const without = list.filter((x) => x !== noneLabel);
+  return without.includes(label) ? without.filter((x) => x !== label) : [...without, label];
+}
+
+// 검색·직접 입력으로 추가. 공백을 다듬고, 이미 있으면 그대로, 빈 값은 무시.
+function addItem(list, label, noneLabel) {
+  const name = label.trim();
+  if (!name) return list;
+  const without = list.filter((x) => x !== noneLabel);
+  return without.includes(name) ? without : [...without, name];
+}
+
+// 점검할 이름 목록 = 영양제 ∪ 복용약 − "없음" 라벨, 중복 제거.
+function checkItems(draft) {
+  const out = [];
+  for (const n of [...draft.supplements, ...draft.medicines]) {
+    if (n === NONE_SUPPLEMENT || n === NONE_MEDICINE) continue;
+    if (!out.includes(n)) out.push(n);
+  }
+  return out;
+}
+
+function summarize(findings) {
+  const byKind = { priority: 0, timing: 0, overlap: 0, caution: 0 };
+  for (const f of findings) byKind[f.kind] += 1;
+  return { total: findings.length, byKind };
+}
+
+/** 결과 화면 전체 보기: kind 순서대로 묶는다(0건 묶음 제외) */
+function groupByKind(findings) {
+  const s = sortFindings(findings);
+  return KIND_ORDER.map((kind) => ({ kind, items: s.filter((f) => f.kind === kind) })).filter((g) => g.items.length > 0);
+}
+
+/** 결과 화면 부제 "혈압약 · 오메가3 · 비타민D 를 대조했어요" — 4개 이상이면 앞 3개 + "외 N개". 0개면 빈 문자열. */
+function checkedNamesLine(names) {
+  if (names.length === 0) return "";
+  if (names.length <= 3) {
+    const list = names.join(" · ");
+    return `${list}${objectJosa(list)} 대조했어요`;
+  }
+  return `${names.slice(0, 3).join(" · ")} 외 ${names.length - 3}개를 대조했어요`;
+}
+
+// 목적격 조사 — 마지막 글자에 받침이 있으면 "을", 없으면 "를". 한글이 아니면(영문·숫자) "를".
+function objectJosa(word) {
+  const ch = word.charCodeAt(word.length - 1);
+  if (ch < 0xac00 || ch > 0xd7a3) return "를";
+  return (ch - 0xac00) % 28 === 0 ? "를" : "을";
+}
+
+// 실제로 대조한 이름 수 = 고른 이름 − 자료에서 못 찾은 제품명. 결과 화면이 "이상 없음"을
+// 말해도 되는지(2개 이상 대조했는지) 판단하는 데 쓴다.
+function checkedCount(draft) {
+  return Math.max(0, checkItems(draft).length - draft.unmatched.length);
+}
+
+/* ---- quickCheckRules.ts — 판정 결과의 등급 라벨·정렬 ---- */
+// priority=우선 확인 필요, timing=복용 시간 조정, overlap=중복·과다 확인, caution=주의사항
+const KIND_LABEL = {
+  priority: "우선 확인 필요",
+  timing: "복용 시간 조정",
+  overlap: "중복·과다 확인",
+  caution: "주의사항",
+};
+
+const KIND_ORDER = ["priority", "timing", "overlap", "caution"];
+
+const TAG = {
+  priority: "우선 확인 필요",
+  timing: "복용 시간 확인 필요",
+  overlap: "중복 성분 확인",
+  excess: "과다 복용 확인",
+  caution: "주의사항",
+};
+
+/** kind 순서(우선 → 시간 → 중복 → 주의)로 안정 정렬. 같은 kind 안의 순서는 유지. */
+function sortFindings(findings) {
+  return findings
+    .map((f, i) => ({ f, i }))
+    .sort((x, y) => (KIND_ORDER.indexOf(x.f.kind) - KIND_ORDER.indexOf(y.f.kind)) || (x.i - y.i))
+    .map((x) => x.f);
+}
+
+/* ---- chipAliases.ts — 종류명 칩 → 서버가 아는 계열·성분 이름 별칭 ----
+   서버의 검수 규칙은 대부분 계열·성분 이름에 걸려 있어서 칩 이름만 보내면 규칙이 안 걸린다
+   (혈압약 → 9개 성분, 규칙 0건). 칩 뒤에 별칭을 덧붙여 보내고, 응답에서 다시 칩 이름으로 되돌린다.
+   "유산균"은 서버에서 엉뚱한 제품으로 풀려 칩을 빼고 별칭만 보낸다(replace). */
+const CHIP_ALIASES = {
+  "혈압약": { names: ["칼슘통로차단제", "RAS차단제", "칼륨보존이뇨제"] },
+  "항우울제": { names: ["SSRI", "SNRI"] },
+  "홍삼": { names: ["인삼"] },
+  "단백질보충제": { names: ["콩"] },
+  "유산균": { names: ["프로바이오틱스"], replace: true },
+  "고지혈증약": { names: ["스타틴"] },
+  "위장약": { names: ["PPI"] },
+  "갑상선약": { names: ["레보티록신"] },
+  "오메가3": { names: ["오메가-3"] },
+  "비타민D": { names: ["비타민 D"] },
+};
+
+function aliasFor(name) {
+  // 칩 라벨에만 별칭을 붙인다 — 자유 입력(제품명)은 그대로.
+  if (!PRESET_LABELS.has(name)) return undefined;
+  return Object.prototype.hasOwnProperty.call(CHIP_ALIASES, name) ? CHIP_ALIASES[name] : undefined;
+}
+
+/** 서버로 보낼 이름 목록과, 별칭→원래 칩 역매핑.
+ *  · send: 입력 순서대로 칩 다음에 그 별칭. 중복 제거. replace 칩은 칩을 빼고 별칭만.
+ *  · aliasOf: 별칭 → 칩. 사용자가 별칭과 같은 이름을 직접 넣었으면 그 이름은 사용자 입력이므로
+ *    역매핑에 넣지 않는다(결과에서 지워지거나 다른 칩 이름으로 바뀌면 안 된다). */
+function expandChipNames(names) {
+  const send = [];
+  const aliasOf = new Map();
+  const userNames = new Set(names);
+  const push = (s) => { if (!send.includes(s)) send.push(s); };
+  for (const n of names) {
+    const a = aliasFor(n);
+    if (!a) { push(n); continue; }
+    if (!a.replace) push(n);
+    for (const alias of a.names) {
+      push(alias);
+      if (!userNames.has(alias) && !aliasOf.has(alias)) aliasOf.set(alias, n);
+    }
+  }
+  return { send, aliasOf };
+}
+
+/* ---- conditionAliases.ts — 기본 정보 라벨 → 서버 조건명(condition.name_ko) ----
+   서버는 p_conditions 를 name_ko 와 문자열 그대로 비교한다. 검수된 조건 규칙은
+   임신 / 만성콩팥병(3~4기·중증) / 혈액투석 / 흡연 / 수술 예정 뿐이다(2026-09-10 확인). */
+const CONDITION_ALIASES = {
+  // DB에는 "임신"만 있다. 수유만 해당하는 사용자도 임신 규칙을 받게 된다(과잉 경고) —
+  // MVP에서는 감수하고 약사 확인을 받는다. 없는 수유 조건명을 지어내지 말 것.
+  "임신·수유 중": ["임신"],
+  // DB에는 만성콩팥병(3~4기·중증) / 혈액투석만 있어 뜻이 다르다(모든 신장질환이 3~4기가 아니다).
+  // 약사가 정할 때까지 일부러 매핑하지 않는다.
+  "신장질환": [],
+  // 서버에 간질환 조건 규칙이 없다.
+  "간질환": [],
+  // 서버에 연령·고령 조건 규칙이 없다.
+  "20대": [],
+  "30대": [],
+  "40대": [],
+  "50대": [],
+  "60대 이상": [],
+};
+
+/** 서버가 아는 조건명 전체(별칭 값의 합집합). */
+const SERVER_NAMES = new Set(Object.values(CONDITION_ALIASES).flat());
+
+function aliasesOf(label) {
+  return Object.prototype.hasOwnProperty.call(CONDITION_ALIASES, label)
+    ? CONDITION_ALIASES[label]
+    : [];
+}
+
+/** 서버가 이 라벨을 판정할 수 있는가 — 별칭이 있거나, 라벨 자체가 서버 조건명이면 된다. */
+function coveredByServer(label) {
+  return aliasesOf(label).length > 0 || SERVER_NAMES.has(label);
+}
+
+/** 서버에 보낼 조건 입력.
+ *  · conditions: 원래 라벨("해당 없음" 제외) + 별칭, 중복 제거, 순서 유지.
+ *  · age: 그대로.
+ *  · uncovered: 사용자가 고른 **조건** 중 서버가 판정하지 못하는 라벨. 결과 화면이 "확인하지 못한 정보"로 보여 준다.
+ *    연령대는 넣지 않는다(서버에 연령 규칙이 없고, 넣으면 모든 결과에 매번 떠서 소음이 된다). */
+function serverConditionInput(profile) {
+  const conditions = [];
+  const uncovered = [];
+  const push = (s) => { if (!conditions.includes(s)) conditions.push(s); };
+  for (const label of profile.conditions) {
+    if (label === NONE_CONDITION) continue;
+    push(label);
+    for (const a of aliasesOf(label)) push(a);
+    if (!coveredByServer(label) && !uncovered.includes(label)) uncovered.push(label);
+  }
+  return { age: profile.age, conditions, uncovered };
+}
+
+/* ---- substanceNames.ts — 성분 영문 코드 → 한국어 이름 ----
+   (앱에서 tools/hff/substance.csv 로 생성된 표를 그대로 옮겼다 — 손으로 고치지 말 것)
+   서버 판정의 DUR 결과가 영문 성분 코드로 오므로 화면 표시에 쓴다. */
+const SUBSTANCE_NAMES = {
+  "ezetimibe": "에제티미브",
+  "metformin": "메트포르민",
+  "alendronate": "알렌드로네이트",
+  "vitamin_d": "비타민 D",
+  "calcium": "칼슘",
+  "vitamin_b12": "비타민 B12",
+  "magnesium": "마그네슘",
+  "coenzyme_q10": "코엔자임 Q10",
+  "statin": "스타틴",
+  "melatonin": "멜라토닌",
+  "folate": "엽산",
+  "omega3": "오메가-3",
+  "caffeine": "카페인",
+  "beta_carotene": "베타카로틴",
+  "vitamin_a": "비타민 A",
+  "garcinia_cambogia": "가르시니아",
+  "green_tea_extract": "녹차 카테킨",
+  "cissus": "시서스",
+  "banaba_leaf": "바나바잎",
+  "bitter_melon": "여주",
+  "resistant_maltodextrin": "난소화성 말토덱스트린",
+  "antidiabetic_drug": "혈당강하제",
+  "red_yeast_rice": "홍국",
+  "phytosterol": "식물스테롤",
+  "nattokinase": "나토키나제",
+  "ginkgo_biloba": "은행잎",
+  "beta_glucan": "베타글루칸",
+  "zinc": "아연",
+  "vitamin_c": "비타민 C",
+  "probiotics": "프로바이오틱스",
+  "vitamin_e": "비타민 E",
+  "polyphenol": "폴리페놀",
+  "curcumin": "커큐민",
+  "resveratrol": "레스베라트롤",
+  "prebiotics": "프리바이오틱스",
+  "ginger": "생강",
+  "honeysuckle": "인동덩굴",
+  "milk_thistle": "밀크씨슬",
+  "n_acetylcysteine": "NAC",
+  "hovenia_dulcis": "헛개나무",
+  "phosphatidylserine": "포스파티딜세린",
+  "rhodiola": "홍경천",
+  "ashwagandha": "아슈와간다",
+  "l_theanine": "테아닌",
+  "vitamin_k2": "비타민 K2",
+  "glucosamine": "글루코사민",
+  "msm": "MSM",
+  "boswellia": "보스웰리아",
+  "leucine": "류신",
+  "hmb": "HMB",
+  "bisphosphonate": "비스포스포네이트",
+  "isoflavone": "이소플라본",
+  "gamma_linolenic_acid": "감마리놀렌산",
+  "saw_palmetto": "쏘팔메토",
+  "collagen": "콜라겐",
+  "lutein": "루테인",
+  "tamoxifen": "타목시펜",
+  "anticoagulant": "항응고제",
+  "antiplatelet": "항혈소판제",
+  "immunosuppressant": "면역억제제",
+  "korean_red_ginseng": "홍삼",
+  "vitamin_b_complex": "비타민 B군",
+  "beta_blocker": "베타차단제",
+  "diuretic": "이뇨제",
+  "antihypertensive": "혈압약",
+  "zeaxanthin": "지아잔틴",
+  "hypnotic": "수면제",
+  "antidepressant": "항우울제",
+  "warfarin": "와파린",
+  "hyaluronic_acid": "히알루론산",
+  "astaxanthin": "아스타잔틴",
+  "black_cohosh": "블랙코호시",
+  "sulfonylurea": "설폰요소제",
+  "insulin": "인슐린",
+  "copper": "구리",
+  "lovastatin": "로바스타틴",
+  "atorvastatin": "아토르바스타틴",
+  "glimepiride": "글리메피리드",
+  "amoxicillin": "아목시실린",
+  "saccharomyces_boulardii": "사카로마이세스 보울라디",
+  "lactobacillus_rhamnosus_gg": "락토바실러스 람노서스 GG",
+  "antibiotic": "항생제",
+  "antithrombotic": "항혈전제",
+  "ginseng": "인삼",
+  "aspirin": "아스피린",
+  "ppi": "PPI",
+  "h2_blocker": "H2차단제",
+  "bismuth": "비스무트",
+  "protein": "단백질",
+  "nmn": "NMN",
+  "spermidine": "스퍼미딘",
+  "st_johns_wort": "세인트존스워트",
+  "iron": "철분",
+  "iodine": "요오드",
+  "amlodipine": "암로디핀",
+  "ssri": "SSRI",
+  "snri": "SNRI",
+  "digoxin": "디곡신",
+  "anticancer_drug": "항암제",
+  "nifedipine": "니페디핀",
+  "calcium_channel_blocker": "칼슘통로차단제",
+  "grapefruit": "자몽",
+  "vitamin_k": "비타민 K",
+  "garlic": "마늘",
+  "cranberry": "크랜베리",
+  "undenatured_type_2_collagen": "비변성 II형 콜라겐",
+  "losartan": "로사르탄",
+  "arb": "ARB",
+  "psyllium": "차전자피",
+  "potassium": "칼륨",
+  "furosemide": "푸로세미드",
+  "loop_diuretic": "루프이뇨제",
+  "thiamine": "티아민",
+  "licorice": "감초",
+  "clopidogrel": "클로피도그렐",
+  "amiodarone": "아미오다론",
+  "kelp": "켈프",
+  "hydrochlorothiazide": "히드로클로로티아지드",
+  "thiazide_diuretic": "티아지드 이뇨제",
+  "tart_cherry": "타트체리 추출물",
+  "niacin": "나이아신",
+  "apixaban": "아픽사반",
+  "doac": "DOAC",
+  "policosanol": "폴리코사놀",
+  "semaglutide": "세마글루타이드",
+  "glp1_agonist": "GLP-1 수용체작용제",
+  "chromium": "크롬",
+  "levothyroxine": "레보티록신",
+  "biotin": "비오틴",
+  "sglt2_inhibitor": "SGLT2 억제제",
+  "dapagliflozin": "다파글리플로진",
+  "febuxostat": "페북소스타트",
+  "dpp4_inhibitor": "DPP-4 억제제",
+  "alpha_lipoic_acid": "알파리포산",
+  "methimazole": "메티마졸",
+  "prednisolone": "프레드니솔론",
+  "glucocorticoid": "글루코코르티코이드",
+  "inositol": "이노시톨",
+  "esa": "적혈구조혈자극제",
+  "erythropoietin": "에리트로포이에틴",
+  "darbepoetin": "다베포에틴",
+  "carnitine": "카르니틴",
+  "starfruit": "스타프루트",
+  "phosphorus": "인",
+  "tacrolimus": "타크로리무스",
+  "mycophenolate_mofetil": "미코페놀레이트 모페틸",
+  "echinacea": "에키네시아",
+  "vitamin_b6": "비타민 B6",
+  "tamsulosin": "탐스로신",
+  "alpha_blocker": "α차단제",
+  "pumpkin_seed_extract": "호박씨 추출물",
+  "antimuscarinic": "항무스카린제",
+  "potassium_citrate": "구연산칼륨",
+  "tolvaptan": "톨밥탄",
+  "levodopa": "레보도파",
+  "carbidopa": "카르비도파",
+  "kava": "카바",
+  "escitalopram": "에스시탈로프람",
+  "five_htp": "5-HTP",
+  "tryptophan": "트립토판",
+  "benzodiazepine": "벤조디아제핀",
+  "valerian": "발레리안",
+  "topiramate": "토피라메이트",
+  "propranolol": "프로프라놀롤",
+  "vitamin_b2": "비타민 B2",
+  "valproic_acid": "발프로산",
+  "carbamazepine": "카르바마제핀",
+  "anticonvulsant": "항경련제",
+  "donepezil": "도네페질",
+  "cholinesterase_inhibitor": "콜린에스터라제 억제제",
+  "anticholinergic": "항콜린성 약물",
+  "interferon": "인터페론",
+  "s1p_modulator": "S1P조절제",
+  "immunomodulator": "면역조절제",
+  "duloxetine": "둘록세틴",
+  "methylphenidate": "메틸페니데이트",
+  "citrus_aurantium": "시트러스 아우란티움",
+  "glycine": "글리신",
+  "pregabalin": "프레가발린",
+  "methotrexate": "메토트렉세이트",
+  "allopurinol": "알로푸리놀",
+  "nsaid": "NSAID",
+  "orlistat": "오를리스타트",
+  "chondroitin": "콘드로이틴",
+  "peppermint_oil": "페퍼민트오일",
+  "inulin": "이눌린",
+  "biologics": "생물학적제제",
+  "tenofovir": "테노포비르",
+  "entecavir": "엔테카비르",
+  "antiviral": "항바이러스제",
+  "lactulose": "락툴로오스",
+  "bcaa": "분지사슬아미노산",
+  "manganese": "망간",
+  "pancreatic_enzyme": "췌장효소",
+  "inhaled_corticosteroid": "흡입 스테로이드",
+  "laba": "지속성 베타작용제",
+  "bronchodilator": "기관지확장제",
+  "quercetin": "케르세틴",
+  "pirfenidone": "피르페니돈",
+  "antifibrotic": "항섬유화제",
+  "isoniazid": "이소니아지드",
+  "antituberculosis_drug": "항결핵제",
+  "propolis": "프로폴리스",
+  "anti_obesity_drug": "항비만약",
+  "phentermine": "펜터민",
+  "naltrexone": "날트렉손",
+  "bupropion": "부프로피온",
+  "liraglutide": "리라글루타이드",
+  "multivitamin": "종합비타민",
+  "finasteride": "피나스테리드",
+  "antioxidant": "고용량 항산화제",
+  "antiretroviral": "항레트로바이러스제",
+  "protease_inhibitor": "프로테아제억제제",
+  "nnrti": "비뉴클레오시드 역전사효소억제제",
+  "integrase_inhibitor": "인테그라제억제제",
+  "polyvalent_cation": "다가양이온",
+  "ras_blocker": "RAS차단제",
+  "potassium_sparing_diuretic": "칼륨보존이뇨제",
+  "soy": "콩",
+  "gaba": "감마-아미노부티르산",
+  "gamma_oryzanol": "감마오리자놀",
+  "creatine": "크레아틴",
+  "l_arginine": "L-아르기닌",
+  "cynanchum_wilfordii_complex": "백수오등복합추출물",
+  "sophora_japonica_fruit_extract": "회화나무열매추출물",
+  "milk_protein_hydrolysate": "유단백가수분해물",
+  "lactobacillus": "락토바실러스",
+  "lithium": "리튬",
+  "rivaroxaban": "리바록사반",
+  "cyclosporine": "사이클로스포린",
+  "heparin": "헤파린",
+  "phenytoin": "페니토인",
+  "comfrey": "컴프리",
+  "piperine": "피페린",
+  "green_tea_extract_egcg": "녹차 추출물(EGCG)",
+  "cimicifuga": "승마",
+  "aloe_anthraquinone": "알로에(안트라퀴논)",
+  "cod_liver_oil": "코드간유·상어연골",
+  "oral_contraceptive": "경구 피임약",
+};
+
+function substanceName(code) {
+  return SUBSTANCE_NAMES[code] ?? code;
+}
+
+/* ---- quickCheckServer.ts — 서버 판정(quick_check_v1 RPC) ----
+   약사 검수를 거친 DB 문구를 **그대로** 보여 준다(덧붙이거나 고쳐 쓰지 않는다).
+   서버 판정 **전용**이다: 서버에 못 닿으면 화면이 연결 안내를 보여 주고 끝낸다. */
+const TIMEOUT_MS = 10000; // 앱: 10_000
+
+/** 서버 판정 호출. 에러·타임아웃(10초)·빈 응답이면 던진다 — 호출자가 연결 안내로 실패 처리한다. */
+async function runServerCheck(input) {
+  let timer;
+  const timeout = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error("quick_check_v1 timeout")), TIMEOUT_MS);
+  });
+  try {
+    const { data, error } = await Promise.race([
+      rpc("quick_check_v1", {
+        p_names: input.names, p_age: input.age, p_conditions: input.conditions,
+      }),
+      timeout,
+    ]);
+    if (error) throw error;
+    if (!data || typeof data !== "object") throw new Error("quick_check_v1: 빈 응답");
+    const r = data;
+    return {
+      resolved: Array.isArray(r.resolved) ? r.resolved : [],
+      unresolved: Array.isArray(r.unresolved) ? r.unresolved : [],
+      unmapped: Array.isArray(r.unmapped) ? r.unmapped : [],
+      findings: Array.isArray(r.findings) ? r.findings : [],
+      dur: Array.isArray(r.dur) ? r.dur : [],
+    };
+  } finally {
+    if (timer !== undefined) clearTimeout(timer);
+  }
+}
+
+// severity→kind 매핑. 단, relation_kind가 중복·과다 계열(depletion|limit)이면 severity와
+// 무관하게 overlap으로 — 결과 화면의 "중복·과다 확인" 묶음에 들어가야 해서다.
+function kindOf(f) {
+  if (f.relation_kind === "depletion" || f.relation_kind === "limit") return "overlap";
+  if (f.severity === "contraindicated" || f.severity === "caution") return "priority";
+  if (f.severity === "timing") return "timing";
+  return "caution"; // monitor | info
+}
+
+function tagOf(f) {
+  if (f.relation_kind === "depletion" || f.relation_kind === "limit") return "중복·과다 확인";
+  switch (f.severity) {
+    case "contraindicated": return "함께 복용 시 주의";
+    case "timing": return "복용 시간 확인 필요";
+    case "caution": return "우선 확인 필요";
+    default: return "주의사항"; // monitor | info
+  }
+}
+
+// 검수 문구 그대로 원칙: what_happens·what_to_do를 줄바꿈으로만 잇고, 둘 다 없으면 summary.
+// 앱이 문장을 덧붙이지 않는다.
+function messageOf(f) {
+  const parts = [f.what_happens, f.what_to_do].filter((s) => typeof s === "string" && s.length > 0);
+  return parts.length > 0 ? parts.join("\n") : f.summary;
+}
+
+const UNMAPPED_CAP = 8;
+const DUR_FALLBACK_MESSAGE = "식약처 병용금기 고시에 함께 쓰지 말라고 되어 있는 조합이에요.";
+
+// 종류명 칩을 "점검하지 못한 항목"으로 내릴 것인가.
+//  (a) via hff_product|drug_product — 임의 제품의 성분으로 풀린 것이라 칩의 뜻과 다르다(예: 유산균).
+//      규칙에 걸렸어도 내린다.
+//  (b) via chip|substance 인데 substance_ids 가 null·빈 배열 — 성분 대조는 못 했지만 RPC가
+//      intake_class 로 규칙을 직접 맞출 수 있다. 어떤 규칙의 matched 에도 안 나오면 내리고,
+//      나오면 점검한 것으로 친다(예: 알레르기약).
+function shouldDemote(r, matchedAnywhere) {
+  if (r.via !== "chip" && r.via !== "substance") return true;
+  const hasIds = Array.isArray(r.substance_ids) && r.substance_ids.length > 0;
+  return !hasIds && !matchedAnywhere.has(r.input);
+}
+
+// 별칭이 chip|substance 로 풀리고 성분 id가 있으면 "제대로 풀렸다".
+function resolvedProperly(r) {
+  return !!r && (r.via === "chip" || r.via === "substance")
+    && Array.isArray(r.substance_ids) && r.substance_ids.length > 0;
+}
+
+/** 서버 응답을 앱의 QuickFinding 목록으로 옮긴다(정렬 포함). 순수 함수.
+ *  · unresolved: 아무 데서도 못 찾은 **입력 이름** — 결과 화면의 "점검하지 못한 항목"이자
+ *    checkedCount 계산 단위. presetLabels를 주면, 그 라벨 중 칩으로 제대로 풀리지 않은 것(shouldDemote 참고)도
+ *    서버 unresolved 뒤에 붙이고(중복 제거) 그 이름이 걸린 규칙 결과는 뺀다. 칩이 아닌 입력(제품명)은 그대로.
+ *  · aliasOf(expandChipNames): 별칭 → 칩. 서버 응답의 별칭 이름을 전부 칩 이름으로 되돌린다 —
+ *    matched는 칩 이름으로 바꿔 제목이 "혈압약 × 자몽"이 되게 하고(결과 안 중복 제거), unresolved의
+ *    별칭은 사용자 입력이 아니므로 뺀다. 칩은 칩 자체 또는 별칭 중 하나가 chip|substance+ids로 풀리면
+ *    점검한 것으로 친다(replace 칩은 별칭만 있다).
+ *  · unmappedIngredients: 제품은 찾았지만 성분 매핑이 없던 **원료명**(중복 제거, 8개까지). */
+function serverToFindings(res, presetLabels, aliasOf) {
+  const toChip = (name) => aliasOf?.get(name) ?? name;
+  const findings = res.findings.map((f) => ({ ...f, matched: [...new Set(f.matched.map(toChip))] }));
+  const aliasesByChip = new Map();
+  if (aliasOf) {
+    for (const [alias, chip] of aliasOf) {
+      const list = aliasesByChip.get(chip);
+      if (list) list.push(alias); else aliasesByChip.set(chip, [alias]);
+    }
+  }
+  // 칩이 제대로 풀리지 않은 입력(shouldDemote 참고). 이 이름이 걸린 규칙 결과는 버린다 —
+  // "유산균 × 혈압약"과 "점검하지 못한 항목: 유산균"이 같이 뜨면 안 된다. DUR 행에는 입력 이름이
+  // 없으므로 그대로 둔다.
+  // 순서는 presetLabels(앱 버튼 순서)를 따른다 — 서버 resolved 순서에 기대면 화면 순서가 흔들린다.
+  const demoted = new Set();
+  if (presetLabels) {
+    const matchedAnywhere = new Set(findings.flatMap((f) => f.matched));
+    const byInput = new Map(res.resolved.map((r) => [r.input, r]));
+    for (const label of presetLabels) {
+      const aliases = aliasesByChip.get(label) ?? [];
+      if (aliases.some((a) => resolvedProperly(byInput.get(a)))) continue; // 별칭 하나라도 제대로 풀리면 점검한 것
+      const r = byInput.get(label);
+      if (r) { if (shouldDemote(r, matchedAnywhere)) demoted.add(label); }
+      else if (aliases.length > 0) demoted.add(label); // replace 칩: 칩은 안 보냈고 별칭도 못 풀렸다
+    }
+  }
+  // 감수하는 손실: matched 가 3개 이상인 규칙도 그중 하나가 탈락하면 통째로 버린다. 클라이언트는
+  // 어느 이름이 규칙의 어느 역할(object/precipitant)인지 모르므로 부분 유지가 불가능하다.
+  const ruleFindings = findings.filter((f) => !f.matched.some((m) => demoted.has(m))).map((f) => ({
+    kind: kindOf(f),
+    a: f.matched[0] ?? "",
+    b: f.matched[1] ?? "",
+    title: f.matched.length > 0 ? f.matched.join(" × ") : f.code,
+    message: messageOf(f),
+    tag: tagOf(f),
+    source: "rule",
+    notice_no: null,
+    evidenceLevel: f.evidence_level,
+    minSeparationHours: f.min_separation_hours ?? null,
+  }));
+  // DUR 행에는 입력 이름이 없다 — 성분명을 제목으로 쓴다. 서버는 영문 코드로 주므로
+  // 한국어 이름으로 바꿔 보여 준다(모르는 코드는 그대로).
+  const durFindings = res.dur.map((d) => {
+    const a = substanceName(d.ingredient_a);
+    const b = substanceName(d.ingredient_b);
+    return {
+      kind: "priority",
+      a,
+      b,
+      title: `${a} × ${b}`,
+      message: d.reason ?? DUR_FALLBACK_MESSAGE,
+      tag: "함께 복용 시 주의",
+      source: "dur",
+      notice_no: d.notice_no,
+    };
+  });
+  // unmapped를 "제품: 원료"로 다 늘어놓으면 너무 길다 — 원료명만 중복 제거해 8개까지.
+  const unmappedIngredients = [...new Set(res.unmapped.map((u) => u.ingredient))].slice(0, UNMAPPED_CAP);
+  // 별칭은 사용자가 넣은 이름이 아니다 — 서버가 못 찾았어도 "점검하지 못한 항목"에 올리지 않는다.
+  const unresolved = res.unresolved.filter((n) => !aliasOf?.has(n));
+  for (const name of demoted) if (!unresolved.includes(name)) unresolved.push(name);
+  return {
+    findings: sortFindings([...ruleFindings, ...durFindings]),
+    unresolved,
+    unmappedIngredients,
+  };
+}
+
+/* ---- screens/QuickCheckAnalyzingScreen.tsx analyze() ----
+   서버 판정(quick_check_v1)만 — 검수된 문구를 그대로 받는다. 실패(throw)하면 ok:false 로
+   돌려 화면이 연결 안내를 보여 준다. 로컬로 대신 판정하지 않는다. */
+async function analyze(draft) {
+  // 서버는 조건을 name_ko 문자열로만 비교한다 — 앱 라벨에 서버 조건명 별칭을 덧붙여 보내고,
+  // 서버가 판정하지 못하는 라벨(uncovered)은 결과 화면에서 알린다.
+  const cond = serverConditionInput(draft.profile);
+  // 칩 이름에도 서버 계열·성분 별칭을 덧붙인다(혈압약 → +칼슘통로차단제·RAS차단제 …, 유산균 → 프로바이오틱스).
+  const { send, aliasOf } = expandChipNames(checkItems(draft));
+  let res;
+  try {
+    res = await runServerCheck({ names: send, age: cond.age, conditions: cond.conditions });
+  } catch {
+    return { ok: false };
+  }
+  // 칩이 제대로 풀리지 않은 것(알레르기약→성분 없음 등)도 "점검하지 못한 항목"으로.
+  const mapped = serverToFindings(res, PRESET_LABELS, aliasOf);
+  return {
+    ok: true, findings: mapped.findings,
+    // unmatched는 **입력 이름**만(unresolved) — checkedCount가 입력 이름 수에서 빼는 단위라
+    // 원료명을 섞으면 계산이 깨진다. 원료명은 unmappedIngredients로 따로 싣는다.
+    unmatched: mapped.unresolved,
+    unmappedIngredients: mapped.unmappedIngredients,
+    uncoveredConditions: cond.uncovered,
+    durUnavailable: false, engine: "server",
+  };
+}
+
+/* ---- screens/QuickCheckResultScreen.tsx ---- */
+// 근거 수준(서버 판정에만 있음) → 표시 라벨. 없는 값(none_known 등)은 보여 주지 않는다.
+const EVIDENCE_LABEL = {
+  established: "명확한 근거",
+  theoretical: "이론적 우려",
+  limited: "이론적 우려",
+  conflicting: "근거 충돌",
+};
+/* ---- lib/voiceScript.ts — 화면 최하단 고정 고지문 ---- */
+const DISCLAIMER = "이 결과는 진단이 아니며, 의사·약사의 판단을 대신하지 않습니다.";
+
+/* ========================= 앱 판정 엔진 이식본 끝 ========================= */
+
+
+/* ==========================================================================
+   2. 화면 상수
+   ========================================================================== */
+/* 점검 중 4단계 — 앱 QuickCheckAnalyzingScreen 과 같은 글자·같은 시간(2.4초, 성공했을 때만 채운다) */
+const STEPS = ["약과 영양제 조합 확인", "성분 확인", "주의 조합 대조", "결과 정리"];
+const MIN_MS = 2400;
+const STEP_MS = MIN_MS / STEPS.length;
+
+/* 영양제 칩 — 앱은 8개 + 「더 보기」 4개. 웹은 처음부터 12개를 같은 순서로 다 펼친다(라벨은 같다). */
+const SUPP_ALL = [...SUPPLEMENT_PRESETS, ...SUPPLEMENT_MORE];
+
+/* 판정 종류 → 색 클래스·아이콘 (색 짝은 앱 KIND_COLOR) */
+const KIND_VIEW = {
+  priority: { cls: 'k-priority', icon: 'i-alert-triangle' },
+  timing:   { cls: 'k-timing',   icon: 'i-clock' },
+  overlap:  { cls: 'k-overlap',  icon: 'i-layers' },
+  caution:  { cls: 'k-caution',  icon: 'i-file-text' }
+};
+
+/* 필수 고지 — 스토어 설명·회사 소개 페이지의 「꼭 알아 두세요」와 같은 네 줄. 줄이지 않는다. */
+const NOTICE_LINES = [
+  '모두의 복약은 의료기기가 아니며, 진단·치료·예방을 목적으로 하지 않습니다.',
+  '점검 결과는 공개된 자료를 바탕으로 확인할 거리를 알려 드리는 정보이며, 의사·약사의 판단을 대신하지 않습니다.',
+  '주의 조합이 나오지 않았다고 해서 안전이 보장되는 것은 아닙니다.',
+  '스스로 약을 끊거나 바꾸지 마시고, 약사나 의사에게 꼭 확인하세요.'
+];
+
+/* 실패 안내 — 앱처럼 판정하지 않고 다시 시도만 권한다. 예시 결과를 대신 보여 주지 않는다. */
+const FAIL_TITLE = '지금은 점검할 수 없어요';
+const FAIL_SUB = '점검 서버에 연결하지 못했어요. 연결 상태를 확인하고 잠시 후 다시 점검해 주세요. ' +
+                 '연결되지 않으면 복용 조합을 판정할 수 없어요.';
+
+/* 공유 — 초대만 담는다. 결과·고른 것은 싣지 않는다(앱: 「내 분석 결과는 공유되지 않아요.」)
+   문장은 앱 care-app/src/lib/quickCheckShare.ts 첫 문장과 같다 — 「괜찮은지 확인」처럼 안전을 보증하는 말은
+   스토어 의료 표현 심사(2026-10-04)에서 뺐다. 앱과 웹에서 같은 사람이 같은 문장을 받는다. */
+const SHARE_TEXT = '드시는 약과 영양제 중에 주의가 필요한 조합이 있는지 1분이면 확인해 볼 수 있어요.';
+
+const CUSTOM_MAX = 20;          // 직접 입력 — 목록 하나당 상한
+
+
+/* ==========================================================================
+   3. 상태 — 메모리에만 있다. 주소창·기기 저장소에 남기지 않는다.
+   ========================================================================== */
+const state = {
+  screen: 'landing',     // landing supp rx analyzing report
+  subject: 'self',       // 누구의 약을 점검하는 중인가 — 'self'(본인) | 'parent'(부모님). 주소·기록·저장소에 싣지 않는다
+  sheet: null,           // null | 'manual'
+  sheetTarget: 'supplements',
+  supplements: [],       // 앱과 같다 — 칩 라벨 + 직접 입력 이름, 누른 순서
+  medicines: [],
+  age: null,
+  conditions: [],
+  step: 0,               // 점검 중 켜진 단계 수
+  failed: false,         // 서버 연결 실패
+  result: null,          // 판정 결과 (지금 고른 것 기준. 고른 것이 바뀌면 지운다)
+  emptyNotice: false,    // 「확인할 것이 없어요」
+  fromInvite: false,
+  bigText: false,
+  histOk: true
+};
+
+/* 약국 QR판(/check/senior/) — 빌드가 같은 원본을 한 벌 더 내면서 <html data-entry="pharmacy"> 를 붙인다.
+   받는 사람이 어르신이라 초대와 같이 존댓말·큰 글씨로 시작하고, 부모님 점검 카드는 띄우지 않는다. */
+const FROM_PHARMACY = document.documentElement.getAttribute('data-entry') === 'pharmacy';
+
+/* 묻는 말투 — 'parent'(부모님이 드시는) | 'polite'(초대·약국: 드시는) | 'plain'(먹고 있는).
+   입력 화면의 질문·안내 문장만 바꾼다. 판정 태그·근거·0건 문구·고지는 앱 글자 그대로 둔다. */
+function voice() {
+  if (state.subject === 'parent') return 'parent';
+  return (state.fromInvite || FROM_PHARMACY) ? 'polite' : 'plain';
+}
+
+const app = document.getElementById('app');
+const sheetRoot = document.getElementById('sheet-root');
+const toastEl = document.getElementById('toast');
+
+
+/* ==========================================================================
+   4. 유틸
+   ========================================================================== */
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, function (c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+  });
+}
+function ico(id, cls) { return '<svg class="' + (cls || 'fx-ico') + '" aria-hidden="true"><use href="#' + id + '"/></svg>'; }
+
+let toastTimer = null;
+function toast(msg) {
+  toastEl.textContent = msg;
+  toastEl.hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function () { toastEl.hidden = true; }, 2600);
+}
+
+function currentDraft() {
+  return {
+    supplements: state.supplements.slice(),
+    medicines: state.medicines.slice(),
+    profile: { age: state.age, conditions: state.conditions.slice() }
+  };
+}
+function realCount(list, noneLabel) { return list.filter(function (x) { return x !== noneLabel; }).length; }
+
+/* 고른 것이 바뀌면 이전 판정은 더 이상 이 조합의 결과가 아니다 */
+function changed() { state.result = null; state.emptyNotice = false; render(); }
+
+
+/* ==========================================================================
+   5. 화면 전환 — history.pushState 로 뒤로가기를 살린다.
+      주소는 언제나 경로 그대로다 — 고른 것·결과를 쿼리·해시에 싣지 않는다.
+      초대 표시(#invite=1)만 남긴다. 지우면 화면을 넘긴 뒤 새로고침했을 때 큰 글씨·존댓말이 풀린다.
+   ========================================================================== */
+function pageUrl() { return location.pathname + location.search + (state.fromInvite ? '#invite=1' : ''); }
+
+function go(screen, opts) {
+  opts = opts || {};
+  state.screen = screen;
+  state.sheet = opts.sheet || null;
+  const snapshot = { screen: screen, sheet: state.sheet, target: state.sheet ? state.sheetTarget : null };
+  const url = pageUrl();
+  try {
+    if (opts.replace) history.replaceState(snapshot, '', url);
+    else history.pushState(snapshot, '', url);
+    state.histOk = true;
+  } catch (e) {
+    state.histOk = false;      /* file:// 등 — 뒤로가기만 포기하고 화면 전환은 살린다 */
+  }
+  render();
+  if (!opts.keepScroll) window.scrollTo(0, 0);
+}
+
+/* 뒤로 — 기록이 막힌 환경이면 직접 한 칸 되돌린다 */
+function back() {
+  if (state.histOk) { history.back(); return; }
+  if (state.sheet) { state.sheet = null; render(); return; }
+  const prev = { supp: 'landing', rx: 'supp', analyzing: 'rx', report: 'rx' }[state.screen] || 'landing';
+  state.screen = prev; render(); window.scrollTo(0, 0);
+}
+
+window.addEventListener('popstate', function (e) {
+  const s = e.state || {};
+  let screen = RENDERERS[s.screen] ? s.screen : 'landing';
+  let sheet = s.sheet === 'manual' ? 'manual' : null;
+  /* 점검 중 화면·결과 없는 결과 화면으로는 돌아가지 않는다 — 고르는 화면으로 보낸다 */
+  if (screen === 'analyzing' || (screen === 'report' && !state.result)) {
+    screen = 'rx'; sheet = null;
+    try { history.replaceState({ screen: 'rx', sheet: null, target: null }, '', pageUrl()); }
+    catch (e2) { /* 무시 */ }
+  }
+  const sameScreen = screen === state.screen;
+  state.screen = screen;
+  state.sheet = sheet;
+  if (sheet) state.sheetTarget = s.target === 'medicines' ? 'medicines' : 'supplements';
+  state.emptyNotice = false;
+  render();
+  if (!sameScreen) window.scrollTo(0, 0);
+});
+
+
+/* ==========================================================================
+   6. 화면 조각
+   ========================================================================== */
+function stepsBar(current) {
+  const cls = function (i) { return i < current ? 's done' : (i === current ? 's on' : 's'); };
+  return '<div class="fx-row gap-sm">' +
+    '<div class="wf-steps"><span class="' + cls(0) + '"></span><span class="' + cls(1) + '"></span></div>' +
+    '<span class="wf-steplabel">' + (current + 1) + ' / 2</span></div>';
+}
+
+/* 부모님 약을 점검하는 동안 영양제·복용약·점검 중·결과 화면 맨 위에 붙는 얇은 띠.
+   본인 점검(self)일 때는 아무것도 그리지 않는다. */
+function subjectBand(subject) {
+  return subject === 'parent'
+    ? '<div class="subject-band">' + ico('i-users', 'fx-ico sm') + '<span>부모님 약을 점검하고 있어요</span></div>'
+    : '';
+}
+
+/* 고르는 칩 하나 — 고른 칩은 앞에 체크가 붙는다(앱과 같다). extraCls 의 wf·wf-tile·sm 은 예전 클래스 이름이다. */
+function chipBtn(act, label, on, extraCls) {
+  return '<button class="chip' + (extraCls ? ' ' + extraCls : '') + (on ? ' selected on' : '') + '" data-act="' + act + '" ' +
+    'data-label="' + esc(label) + '" aria-pressed="' + on + '">' +
+    (on ? ico('i-check', 'fx-ico sm') : '') + '<span class="t-name">' + esc(label) + '</span></button>';
+}
+
+function ctaBar(note, noteIcon, act, label, enabled) {
+  return '<div class="wf-cta">' +
+    (note ? '<div class="c-count">' + ico(noteIcon, 'fx-ico sm') + '<span>' + note + '</span></div>' : '') +
+    '<button class="big-btn primary" data-act="' + act + '"' + (enabled ? '' : ' disabled') + '>' +
+      label + ico('i-chevron-right') + '</button></div>';
+}
+
+function noneChip(label, on, act) {
+  return '<button class="chip wf none-chip' + (on ? ' selected' : '') + '" data-act="' + act + '" ' +
+    'data-label="' + esc(label) + '" aria-pressed="' + on + '">' + (on ? ico('i-check', 'fx-ico sm') : '') +
+    esc(label) + '</button>';
+}
+
+/* 직접 적은 이름 — 앱처럼 고른 칩으로 보이고, 누르면 뺀다 */
+function customChips(customs, target) {
+  return customs.map(function (c) {
+    return '<span class="chip sm custom selected">' + esc(c) +
+      '<button class="wf-x" data-act="del-item" data-target="' + target + '" data-label="' + esc(c) + '" ' +
+      'aria-label="' + esc(c) + ' 빼기">' + ico('i-x', 'fx-ico sm') + '</button></span>';
+  }).join('');
+}
+function customBlock(customs, target) {
+  if (!customs.length) return '';
+  return '<div class="fx-col gap-sm"><div class="fx-cap">직접 적어 주신 것</div>' +
+    '<div class="fx-chips tight">' + customChips(customs, target) + '</div></div>';
+}
+
+function noticeBlock(lines) {
+  return '<div class="wf-disclaim"><div class="nb-head">꼭 알아 두세요</div><ul class="nb-list">' +
+    lines.map(function (t) { return '<li>' + t + '</li>'; }).join('') + '</ul></div>';
+}
+
+/* ---------- 랜딩 결과 미리보기 ----------
+   결과 카드의 생김새만 보여 준다. 칩 글자는 앱 판정 태그이고, 본문은 내용 없는 막대다. */
+function landingPreview() {
+  const card = function (kind, tag, bars) {
+    return '<div class="lp-card k-' + kind + '"><span class="lp-chip">' + tag + '</span>' +
+      bars.map(function (w) { return '<span class="lp-bar ' + w + '"></span>'; }).join('') + '</div>';
+  };
+  return '<div class="lp">' +
+    '<div class="lp-head"><b>1분 뒤 이런 걸 받아요</b><span>판정 · 근거 수준 · 권장 간격</span></div>' +
+    '<div class="lp-frame">' +
+      '<div class="lp-stage" aria-hidden="true">' +
+        card('timing', '복용 시간 확인 필요', ['w1', 'w2']) +
+        card('priority', '우선 확인 필요', ['w3', 'w2']) +
+        card('overlap', '중복·과다 확인', ['w1']) +
+      '</div>' +
+      '<span class="lp-mark">예시 화면</span>' +
+    '</div>' +
+  '</div>';
+}
+
+/* ---------- 랜딩 ---------- */
+function renderLanding() {
+  /* 초대 링크(#invite=1)로 들어온 사람은 받는 사람이다 — 문장을 존댓말 쪽으로 옮기고 글자를 키운다.
+     담긴 정보는 「초대로 왔다」는 부울 하나뿐이라 개인정보가 아니다.
+     약국 QR판(/check/senior/)도 같은 쪽 — 첫 문장만 약국 안내로 바꾼다. */
+  const inv = state.fromInvite;
+  const polite = inv || FROM_PHARMACY;
+  return '<div class="screen-body gap-md">' +
+    (polite
+      ? '<div class="fx-row gap-sm"><button class="big-btn ghost sm" data-act="big-text">' +
+          (state.bigText ? '글자 작게' : '글자 크게') + '</button></div>'
+      : '') +
+    '<div class="wf-hero">' +
+      '<span class="h-eyebrow">' + (FROM_PHARMACY ? '약국에서 안내받으셨나요?'
+        : inv ? '확인 요청을 받고 오셨나요?' : '모두의 복약 · 1분 복용 점검') + '</span>' +
+      /* 줄바꿈은 글자 크기·화면 폭에 맡긴다 — 30px 에서는 억지 줄바꿈이 4줄이 된다 */
+      '<div class="h-title">' + (polite
+        ? '지금 드시는 약이랑 영양제, 같이 드셔도 괜찮을까요?'
+        : '지금 먹는 약이랑 영양제, 같이 먹어도 괜찮을까요?') + '</div>' +
+      '<div class="h-sub">' + (FROM_PHARMACY
+        ? '드시는 것만 골라주시면 1분 안에 결과가 나옵니다. 궁금한 점은 결과 화면을 약사에게 보여 주며 물어보세요.'
+        : inv
+        ? '가족이나 지인분이 보내신 링크예요. 드시는 것만 골라주시면 1분 안에 결과가 나옵니다.'
+        : '약과 건강기능식품을 함께 확인해 드립니다. 병원과 약국에서 따로 묻기 어려웠던 조합이요.') + '</div>' +
+    '</div>' +
+    landingPreview() +
+    '<div class="fx-cap fx-center">' + DISCLAIMER + '</div>' +
+    /* 신뢰 3줄 — 18px 에서는 3칸에 못 들어가 세로 목록으로 둔다. 시작 버튼은 아래 하단 고정 틀에 있다 */
+    '<div class="wf-trust">' +
+      '<div>' + ico('i-users') + '<b>가입 없음</b><span>로그인하지 않아도 결과를 봅니다</span></div>' +
+      '<div>' + ico('i-clock') + '<b>1분</b><span>두 번만 고르면 끝나요</span></div>' +
+      '<div>' + ico('i-check-circle') + '<b>무료</b><span>결제 단계가 없습니다</span></div>' +
+    '</div>' +
+    '<div class="fx-divider"></div>' +
+    noticeBlock(NOTICE_LINES) +
+  '</div>' +
+  /* 시작 버튼은 하단 고정 — 스크롤 위치·글자 크기와 상관없이 늘 보인다 */
+  ctaBar(null, null, 'start', polite ? '지금 드시는 것 고르기' : '내 조합 확인하기', true);
+}
+
+/* ---------- 1단계: 영양제 (앱 1/3) ---------- */
+function renderSupp() {
+  const list = state.supplements;
+  /* 앱처럼 알약 모양 칩이 줄을 채우며 흐른다 — 18px 글씨는 3칸 격자에 들어가지 않는다(「단백질보충제」) */
+  const tiles = SUPP_ALL.map(function (label) {
+    return chipBtn('supp-toggle', label, list.includes(label), 'wf-tile');
+  }).join('') +
+  '<button class="chip add wf-tile" data-act="open-manual" data-target="supplements">' +
+    ico('i-plus', 'fx-ico sm') + '<span class="t-name">직접 입력</span></button>';
+
+  const customs = list.filter(function (x) { return x !== NONE_SUPPLEMENT && !SUPP_ALL.includes(x); });
+  const noneOn = list.includes(NONE_SUPPLEMENT);
+  const n = realCount(list, NONE_SUPPLEMENT);
+  const v = voice();
+  const eat = v === 'plain' ? '먹는' : '드시는';     /* 「먹는 영양제 없음」 칩 글자는 앱 그대로 둔다 */
+  const note = noneOn ? eat + ' 영양제가 없다고 하셨어요'
+    : (n ? '<b>' + n + '개</b> 골랐어요' : eat + ' 것을 고르거나, 없으면 「' + NONE_SUPPLEMENT + '」을 눌러 주세요');
+  const title = v === 'parent' ? '부모님이 드시는 영양제나<br>건강기능식품이 있나요?'
+    : v === 'polite' ? '지금 드시는 영양제나<br>건강기능식품이 있나요?'
+    : '현재 먹고 있는 영양제나<br>건강기능식품이 있나요?';
+
+  return subjectBand(state.subject) + '<div class="screen-body gap-md">' +
+    stepsBar(0) +
+    '<div class="t-title">' + title + '</div>' +
+    '<div class="fx-cap16">약과 함께 ' + (v === 'plain' ? '먹었을' : '드셨을') + ' 때 확인이 필요한 조합이 있는지 살펴볼게요.</div>' +
+    '<div class="fx-chips wf-grid">' + tiles + '</div>' +
+    customBlock(customs, 'supplements') +
+    noneChip(NONE_SUPPLEMENT, noneOn, 'supp-toggle') +
+  '</div>' + ctaBar(note, list.length ? 'i-check' : 'i-alert-circle', 'to-rx', '다음', list.length > 0);
+}
+
+/* ---------- 2단계: 복용약 + 기본 정보 (앱 2/3 + 3/3) ----------
+   웹은 화면 수를 줄이려고 기본 정보를 이 화면 아래에 합쳤다. 받는 값은 앱과 같다
+   (연령대 하나는 꼭 고른다 — 앱도 연령대 없이는 다음으로 가지 않는다). */
+function renderRx() {
+  const list = state.medicines;
+  const chips = MEDICINE_PRESETS.map(function (label) {
+    return chipBtn('med-toggle', label, list.includes(label), 'wf');
+  }).join('');
+  const customs = list.filter(function (x) { return x !== NONE_MEDICINE && !MEDICINE_PRESETS.includes(x); });
+  const noneOn = list.includes(NONE_MEDICINE);
+
+  const ages = AGES.map(function (label) {
+    return chipBtn('age', label, state.age === label, 'wf sm');
+  }).join('');
+  const conds = CONDS.map(function (label) {
+    return chipBtn('cond', label, state.conditions.includes(label), 'wf sm');
+  }).join('');
+
+  const canNext = list.length > 0 && state.age !== null;
+  const v = voice();
+  const parent = v === 'parent';
+  const note = !list.length ? (v === 'plain' ? '먹는' : '드시는') + ' 약을 고르거나, 없으면 「' + NONE_MEDICINE + '」을 눌러 주세요'
+    : (state.age === null ? (parent ? '부모님 연령대를 골라 주세요' : '연령대를 골라 주세요') : '');
+
+  return subjectBand(state.subject) + '<div class="screen-body gap-md">' +
+    stepsBar(1) +
+    '<div class="t-title">' + (parent ? '부모님이 복용 중인<br>약이 있나요?' : '현재 복용 중인<br>약이 있나요?') + '</div>' +
+    '<div class="fx-cap16">정확한 이름을 몰라도 괜찮아요. 종류만 골라주세요.</div>' +
+    '<div class="fx-chips">' + chips + '</div>' +
+    customBlock(customs, 'medicines') +
+    noneChip(NONE_MEDICINE, noneOn, 'med-toggle') +
+    '<div class="fx-cap">이름을 알고 계시다면</div>' +
+    '<button class="row-card" data-act="open-manual" data-target="medicines">' +
+      '<div class="icon-box">' + ico('i-plus') + '</div>' +
+      '<div class="grow stack gap-xs"><span class="t-body bold">약 이름 직접 입력</span>' +
+      '<span class="fx-cap">약 봉투나 통에 적힌 이름 그대로 적어 주세요</span></div>' +
+      ico('i-chevron-right', 'fx-ico t-secondary') +
+    '</button>' +
+    '<div class="fx-divider"></div>' +
+    '<div class="section-title first">' + (parent ? '부모님 연령대가 어떻게 되세요?' : '연령대가 어떻게 되세요?') + '</div>' +
+    '<div class="fx-chips tight">' + ages + '</div>' +
+    '<div class="section-title">' + (parent ? '부모님께 해당되는 항목이 있나요?' : '해당되는 항목이 있나요?') + '</div>' +
+    '<div class="fx-chips tight">' + conds + '</div>' +
+    '<div class="fx-cap">복용 조합을 확인하기 위한 최소 정보입니다.</div>' +
+    '<div class="fx-divider"></div>' +
+    '<div class="card fx-strip">' +
+      '<div><b>' + realCount(state.supplements, NONE_SUPPLEMENT) + '</b><span>영양제</span></div>' +
+      '<div><b>' + realCount(list, NONE_MEDICINE) + '</b><span>복용약</span></div>' +
+    '</div>' +
+    (state.emptyNotice
+      ? '<div class="warn-banner caution" role="alert">' + ico('i-alert-circle') +
+        '<span><b>확인할 것이 없어요.</b> 약이나 영양제를 하나 이상 골라야 복용 조합을 점검할 수 있어요.</span></div>'
+      : '') +
+  '</div>' + ctaBar(note, 'i-alert-circle', 'analyze', '내 복용 분석하기', canNext);
+}
+
+/* ---------- 직접 입력 시트 ----------
+   적은 이름은 앱처럼 **그대로** 서버에 보낸다. 서버가 못 찾으면 결과의 「점검하지 못한 항목」에 뜬다. */
+function sheetManual() {
+  const key = state.sheetTarget;
+  const noneLabel = key === 'medicines' ? NONE_MEDICINE : NONE_SUPPLEMENT;
+  const presets = key === 'medicines' ? MEDICINE_PRESETS : SUPP_ALL;
+  const customs = state[key].filter(function (x) { return x !== noneLabel && !presets.includes(x); });
+  return '<div class="wf-dim" data-act="close-sheet"></div>' +
+    '<div class="wf-sheet" role="dialog" aria-label="직접 입력">' +
+      '<div class="sh-grab"></div>' +
+      '<div class="t-title">직접 입력</div>' +
+      '<div class="fx-cap16">' + (key === 'medicines' ? '약' : '영양제') + ' 이름을 적어 주세요. ' +
+        '적어 주신 이름 그대로 점검하고, 자료에서 찾지 못하면 결과에 「점검하지 못한 항목」으로 알려 드려요.</div>' +
+      '<form data-act="add-manual">' +
+        '<input class="input" id="manual-input" type="text" maxlength="60" placeholder="약이나 영양제 이름" autocomplete="off" enterkeyhint="done">' +
+        '<button class="big-btn secondary" type="submit">' + ico('i-plus') + '추가하기</button>' +
+      '</form>' +
+      (customs.length
+        ? '<div class="fx-chips tight">' + customChips(customs, key) + '</div>'
+        : '<span class="fx-cap">아직 적으신 것이 없습니다.</span>') +
+      '<button class="big-btn primary" data-act="close-sheet">닫기</button>' +
+    '</div>';
+}
+function renderSheet() { return state.sheet === 'manual' ? sheetManual() : ''; }
+
+/* ---------- 점검 중 / 연결 실패 ---------- */
+function renderAnalyzing() {
+  const failed = state.failed;
+  const lines = STEPS.map(function (label, i) {
+    const on = i < state.step && !failed;
+    const now = i === state.step && !failed;
+    return '<div class="wf-line' + (on ? ' done' : (now ? ' now' : '')) + '"><span class="l-dot">' +
+      (on ? ico('i-check', 'fx-ico sm') : '') + '</span><span>' + label + '</span></div>';
+  }).join('');
+
+  return subjectBand(state.subject) + '<div class="screen-body gap-lg">' +
+    '<div class="fx-spacer"></div>' +
+    '<div class="wf-scan' + (failed ? ' off' : '') + '">' +
+      '<svg class="scan-ring" viewBox="0 0 100 100" aria-hidden="true">' +
+        '<circle class="scan-track" cx="50" cy="50" r="44"/>' +
+        '<circle class="scan-sweep" cx="50" cy="50" r="44"/>' +
+      '</svg>' + ico(failed ? 'i-alert-circle' : 'i-shield-check', 'fx-ico xl') + '</div>' +
+    '<div class="fx-col gap-sm" role="status" aria-live="polite">' +
+      '<div class="t-title an-title fx-center">' + (failed ? FAIL_TITLE : '복용 조합을 점검하고 있어요') + '</div>' +
+      '<div class="fx-cap16 fx-center">' + (failed ? FAIL_SUB
+        : '약과 영양제 조합을 확인하고 식약처 자료와 대조합니다. 잠시만 기다려 주세요.') + '</div>' +
+    '</div>' +
+    '<div class="wf-lines">' + lines + '</div>' +
+    (failed
+      ? '<div class="fx-col gap-sm">' +
+          '<button class="big-btn primary" data-act="retry">다시 시도하기</button>' +
+          '<button class="big-btn secondary" data-act="back">고른 것 다시 보기</button>' +
+        '</div>'
+      : '') +
+    '<div class="fx-spacer"></div>' +
+  '</div>';
+}
+
+/* ---------- 결과 — 앱 QuickCheckResultScreen 과 같은 순서·같은 글자 ---------- */
+function pairHtml(title) {
+  return String(title).split(' × ').map(esc).join(' <span class="p-x">×</span> ');
+}
+
+function findingCard(f) {
+  const v = KIND_VIEW[f.kind] || KIND_VIEW.caution;
+  const evidence = f.evidenceLevel && Object.prototype.hasOwnProperty.call(EVIDENCE_LABEL, f.evidenceLevel)
+    ? EVIDENCE_LABEL[f.evidenceLevel] : undefined;
+  return '<div class="wf-find ' + v.cls + '">' +
+    '<span class="f-lv">' + ico(v.icon, 'fx-ico sm') + esc(f.tag) + '</span>' +
+    '<div class="wf-pair">' + pairHtml(f.title) + '</div>' +
+    '<div class="f-what">' + esc(f.message) + '</div>' +
+    (typeof f.minSeparationHours === 'number'
+      ? '<div class="f-sep">' + ico('i-clock', 'fx-ico sm') + '<span>' + esc('권장 간격: ' + f.minSeparationHours + '시간') + '</span></div>'
+      : '') +
+    (f.source === 'dur' && f.notice_no
+      ? '<div class="f-src">' + esc('근거: 식약처 DUR 고시 ' + f.notice_no) + '</div>'
+      : '') +
+    '<div class="f-foot"><span class="f-pharm">약사 확인 권장</span>' +
+      (evidence ? '<span class="f-ev">' + esc(evidence) + '</span>' : '') +
+      '<span class="f-note">복용 방법은 약사 또는 의료진과 확인해주세요.</span></div>' +
+  '</div>';
+}
+
+function renderReport() {
+  const r = state.result;
+  /* 이 결과가 누구의 것인가 — state.subject 가 아니라 점검을 시작할 때 결과에 묶어 둔 값을 쓴다.
+     그래서 뒤로가기·앞으로가기로 어느 기록에 서 있든 부모님 결과가 본인 결과처럼 보이지 않는다. */
+  const parent = r.subject === 'parent';
+  const findings = r.findings;
+  const names = r.names;
+  const unmatched = r.unmatched;
+  const unmappedIngredients = r.unmappedIngredients;
+  // 서버가 아직 판정하지 못하는 기본 정보(신장질환, 간질환 — 연령대는 제외).
+  const uncoveredConditions = r.uncoveredConditions;
+  // 대조한 이름이 2개 미만이면 조합 점검 자체가 성립하지 않는다 — "이상 없음"이라 하면 안 된다.
+  const nothingChecked = r.checkedCount < 2;
+  const summary = summarize(findings);
+  const namesLine = checkedNamesLine(names);
+  const title = summary.total > 0
+    ? `확인 필요 ${summary.total}건`
+    : nothingChecked ? "복용 조합 점검이 끝났어요." : "확인된 주의 조합이 없어요";
+  /* 제목 글자는 앱과 같다(글자 그대로 「확인 필요 N건」). 부모님 결과는 앞에 「부모님 약 · 」을 붙인다. */
+  const titleHtml = (parent ? '부모님 약 · ' : '') + (summary.total > 0
+    ? '확인 필요 <span class="v-n">' + summary.total + '</span>건'
+    : esc(title));
+
+  // ① 제목 · ② 대조한 이름
+  const verdict = '<div class="wf-verdict ' + (summary.total > 0 ? 'found' : 'clear') + '">' +
+    '<div class="v-title">' + titleHtml + '</div>' +
+    (namesLine ? '<div class="v-names">' + esc(namesLine) + '</div>' : '') +
+  '</div>';
+
+  // ③ 자료에서 못 찾은 이름 — 성분을 알 수 없어 점검에서 빠진다
+  const unmatchedBox = unmatched.length > 0
+    ? '<div class="nc-box">' +
+        '<div class="nc-head">' + ico('i-alert-circle') + '<span>점검하지 못한 항목 ' + unmatched.length + '개</span></div>' +
+        '<div class="nc-names">' + esc(unmatched.join(' · ')) + '</div>' +
+        '<div class="nc-desc">' + esc(unmatchedDescription(unmatched)) + '</div>' +
+      '</div>'
+    : '';
+  // 서버 조건 규칙이 없는 기본 정보 — 결과에 반영되지 않았음을 숨기지 않는다
+  const uncoveredNote = uncoveredConditions.length > 0
+    ? '<div class="fx-col gap-xs">' +
+        '<p class="note">' + esc('이번 점검에서 아직 확인하지 못한 정보: ' + uncoveredConditions.join(' · ')) + '</p>' +
+        '<p class="note">약사에게 함께 말씀해 주세요.</p>' +
+      '</div>'
+    : '';
+  // 제품은 찾았지만 성분 매핑이 없던 원료 — 점검 단위(입력 이름)가 아니라 따로 알린다
+  const unmappedNote = unmappedIngredients.length > 0
+    ? '<p class="note">' + esc('성분을 확인하지 못한 원료: ' + unmappedIngredients.join(' · ')) + '</p>'
+    : '';
+
+  // ④ 0건 — 앱 문장 + 「안전이 보장되는 것은 아닙니다」 단서를 같은 자리에
+  const safe = (summary.total === 0 && !nothingChecked)
+    ? '<div class="card safe">' + ico('i-shield-check', 'fx-ico lg') +
+        '<div class="safe-desc">고르신 약과 영양제 사이에 알려진 주의 조합은 없었어요.</div>' +
+        '<div class="safe-caveat">' + NOTICE_LINES[2] + '</div>' +
+      '</div>'
+    : '';
+
+  // ⑤ 종류별 전부
+  const groups = summary.total > 0
+    ? groupByKind(findings).map(function (g) {
+        return '<div class="section-title">' + esc(KIND_LABEL[g.kind] + ' ' + g.items.length + '건') + '</div>' +
+          '<div class="findings">' + g.items.map(findingCard).join('') + '</div>';
+      }).join('')
+    : '';
+
+  // ⑥ 대조 2개 미만 — 조합 점검이 성립하지 않는다
+  const notEnough = nothingChecked
+    ? '<div class="card safe">' +
+        '<div class="safe-title">점검할 조합이 부족해요</div>' +
+        '<div class="safe-desc">약과 영양제를 두 가지 이상 고르면 함께 먹어도 되는지 확인할 수 있어요.</div>' +
+      '</div>' +
+      '<button class="big-btn primary" data-act="repick">다시 고르기' + ico('i-chevron-right') + '</button>'
+    : '';
+
+  // ⑨ 고지 — 약사 확인 한 번 + 면책 (앱과 같은 문장) + 필수 고지 나머지
+  //    약국 QR로 온 분에게는 그 앞에 「이 화면을 약사에게」 한 줄을 더한다(웹에만 있는 문장).
+  const notice =
+    (FROM_PHARMACY
+      ? '<div class="card elevated fx-col gap-sm"><div class="fx-lead"><b>궁금한 점은 이 화면을 약사에게 보여 주며 물어보세요.</b></div></div>'
+      : '') +
+    '<div class="notice-box">' + ico('i-alert-circle') +
+      '<span>스스로 약을 끊거나 바꾸지 마시고, <b>약사나 의사에게 꼭 확인하세요.</b></span></div>' +
+    '<div class="fx-cap fx-center">' + DISCLAIMER + '</div>' +
+    noticeBlock([NOTICE_LINES[0], NOTICE_LINES[2]]);
+
+  // 앱 안내 — 앱 받기는 언제나 /app/ 한 곳으로 보낸다(빌드가 common/앱받기.html 로 만든다).
+  //    출시 전엔 /app/ 이 「출시 준비 중」을 알리고, 출시 후엔 기기에 맞는 스토어로 보낸다.
+  //    그래서 이 버튼 글자는 출시 전후에 같다. 출시되면 아래 「출시 준비 중」 한 줄만 지운다.
+  const cmp = [
+    ['복용 조합 1회 점검', true],
+    ['이름 일부로 약 찾기', false],
+    ['약 봉투 사진으로 등록', false],
+    ['새 약을 추가할 때마다 다시 확인', false],
+    ['복약 알람', false]
+  ].map(function (row) {
+    return '<div class="cp-row"><span class="cp-name">' + row[0] + '</span>' +
+      '<span class="cp-web">' + ico(row[1] ? 'i-check' : 'i-minus') + '</span>' +
+      '<span class="cp-app">' + ico('i-check') + '</span></div>';
+  }).join('');
+  const appSection =
+    '<div class="section-title">약은 계속 바뀝니다</div>' +
+    '<div class="card elevated fx-col gap-sm">' +
+      '<div class="fx-lead">오늘 결과는 <b>오늘 조합</b> 기준이에요. 약이 하나만 바뀌어도 결과가 달라집니다.</div>' +
+    '</div>' +
+    '<div class="section-title">웹에서 되는 것, 앱에서 되는 것</div>' +
+    '<div class="card"><div class="wf-compare">' +
+      '<div class="cp-row cp-head"><span class="cp-name"></span><span class="cp-web">웹</span><span class="cp-app">앱</span></div>' +
+      cmp +
+    '</div></div>' +
+    '<a class="big-btn secondary" href="/app/">' + ico('i-smartphone') + '모두의 복약 앱 살펴보기</a>' +
+    '<div class="fx-cap fx-center">Google Play · App Store 출시 준비 중이에요</div>';
+
+  // ⑦ 부모님 약도 — 본인 점검 결과에서만. 같은 화면을 한 번 더 돌린다. 이름·결과는 어디에도 저장하지 않는다.
+  //    부모님 결과에서는 이 카드를 다시 띄우지 않고, 본인 점검으로 돌아가는 버튼만 둔다.
+  /* 부모님 카드는 본인 점검이 성립했을 때만. 「점검할 조합이 부족해요」에서 권하면 순서가 어긋난다.
+     약국 QR로 온 어르신에게는 띄우지 않는다. 누르면 지금 결과가 지워진다는 것을 버튼 바로 아래에 적는다 */
+  const parentCard = parent
+    ? '<button class="big-btn secondary" data-act="self-start">내 조합 다시 확인하기</button>'
+    : (nothingChecked || FROM_PHARMACY) ? ''
+    : '<div class="card promo">' +
+        '<div class="promo-head"><div class="icon-box">' + ico('i-heart') + '</div>' +
+          '<div class="promo-title">부모님 약도 같이 점검해 보세요</div></div>' +
+        '<div class="promo-desc">부모님이 드시는 약과 영양제를 골라 드리면 1분 안에 확인돼요. 저장되지 않아요.</div>' +
+        '<button class="big-btn primary" data-act="parent-start">부모님 약 점검하기</button>' +
+        '<div class="fx-cap fx-center">누르면 지금 보고 계신 결과는 지워져요.</div>' +
+      '</div>';
+
+  // ⑧ 공유 — 카드. 초대(서비스 주소 + #invite=1)만 보낸다. 결과·고른 것은 싣지 않는다.
+  const share =
+    '<div class="card promo">' +
+      '<div class="promo-head"><div class="icon-box">' + ico('i-send') + '</div>' +
+        '<div class="promo-title">가족·친구에게 알려주기</div></div>' +
+      '<div class="promo-desc">결과는 보내지 않고, 1분 점검 링크만 보내요.</div>' +
+      '<button class="big-btn secondary" data-act="share">가족·지인에게 1분 점검 보내기</button>' +
+      '<div class="fx-cap fx-center">내 분석 결과는 공유되지 않아요.</div>' +
+    '</div>';
+
+  return subjectBand(r.subject) + '<div class="screen-body gap-md stagger">' +
+    verdict +
+    unmatchedBox +
+    uncoveredNote +
+    unmappedNote +
+    safe +
+    groups +
+    notEnough +
+    notice +
+    parentCard +
+    share +
+    '<div class="fx-divider"></div>' +
+    appSection +
+    '<div class="fx-divider"></div>' +
+    /* 부모님 결과에서는 위 「내 조합 다시 확인하기」와 겹치지 않게, 다른 분(다른 부모님) 점검으로 */
+    (parent
+      ? '<button class="big-btn ghost" data-act="parent-start">다른 분 약 점검하기</button>'
+      : '<button class="big-btn ghost" data-act="restart">다른 조합으로 다시 해보기</button>') +
+  '</div>';
+}
+
+
+/* ==========================================================================
+   7. 렌더
+   ========================================================================== */
+const RENDERERS = {
+  landing: renderLanding,
+  supp: renderSupp,
+  rx: renderRx,
+  analyzing: renderAnalyzing,
+  report: renderReport
+};
+
+/* 건수 카운트업 — 「숫자를 세는 것」이지 좋은 결과를 축하하는 연출이 아니다.
+   0 에서 시작하지 않고, 모션을 줄여 달라고 했거나 백그라운드 탭이면 굴리지 않는다. */
+function reduceMotion() {
+  try { return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); }
+  catch (e) { return false; }
+}
+function countUp(el, ms, delay) {
+  if (!el) return;
+  const n = Number(el.textContent) || 0;
+  el.textContent = String(n);
+  if (reduceMotion() || n <= 1 || !window.requestAnimationFrame || document.hidden) return;
+  el.textContent = '1';
+  let done = false;
+  const finish = function () { if (!done) { done = true; el.textContent = String(n); } };
+  const guard = setTimeout(finish, (delay || 0) + ms + 1200);
+  setTimeout(function () {
+    if (el.isConnected === false) { clearTimeout(guard); return; }
+    let t0 = null;
+    const tick = function (now) {
+      if (done) return;
+      if (el.isConnected === false) { clearTimeout(guard); return; }
+      if (t0 === null) t0 = now;
+      const p = Math.min(1, (now - t0) / ms);
+      el.textContent = String(Math.max(1, Math.round(n * (1 - Math.pow(1 - p, 3)))));
+      if (p < 1) requestAnimationFrame(tick);
+      else { clearTimeout(guard); finish(); }
+    };
+    requestAnimationFrame(tick);
+  }, delay || 0);
+}
+
+let lastRenderedScreen = null;
+function render() {
+  app.innerHTML = RENDERERS[state.screen]();
+  sheetRoot.innerHTML = renderSheet();
+  document.body.style.overflow = state.sheet ? 'hidden' : '';
+  if (state.sheet === 'manual') {
+    const el = document.getElementById('manual-input');
+    if (el) el.focus();
+  }
+  if (state.screen === 'report' && lastRenderedScreen !== 'report') {
+    countUp(app.querySelector('.wf-verdict .v-n'), 820, 320);
+  }
+  lastRenderedScreen = state.screen;
+}
+
+
+/* ==========================================================================
+   8. 점검 — 앱 QuickCheckAnalyzingScreen.run() 과 같은 흐름
+      · 단계 표시는 시간에 맞춰 켠다(조회 진행과 무관 — 조회는 보통 더 빨리 끝난다)
+      · 실패는 바로 알린다 — 최소 표시 시간(2.4초)은 성공했을 때만 채운다
+      · 실패하면 판정하지 않는다. 연결 안내와 「다시 시도하기」만.
+   ========================================================================== */
+let analyzeToken = 0;
+function startAnalyze(retry) {
+  const token = ++analyzeToken;
+  const subject = state.subject;   /* 이 점검이 누구의 것인지 — 결과에 묶어 두고, 도중에 바뀌면 결과를 버린다 */
+  state.step = 0;
+  state.failed = false;
+  state.result = null;
+  if (retry) render(); else go('analyzing');
+  const alive = function () { return token === analyzeToken && state.screen === 'analyzing' && state.subject === subject; };
+  const timers = STEPS.map(function (_, i) {
+    return setTimeout(function () {
+      if (alive() && !state.failed) { state.step = i + 1; render(); }
+    }, STEP_MS * (i + 1));
+  });
+  const started = Date.now();
+  const draft = currentDraft();
+  analyze(draft).catch(function () { return { ok: false }; }).then(function (r) {
+    if (!alive()) { timers.forEach(clearTimeout); return; }
+    if (!r.ok) { timers.forEach(clearTimeout); state.failed = true; render(); return; }
+    const names = checkItems(draft);
+    const result = {
+      subject: subject,
+      findings: r.findings, names: names, unmatched: r.unmatched,
+      checkedCount: Math.max(0, names.length - r.unmatched.length),
+      unmappedIngredients: r.unmappedIngredients, uncoveredConditions: r.uncoveredConditions
+    };
+    const wait = Math.max(0, MIN_MS - (Date.now() - started));
+    setTimeout(function () {
+      if (!alive()) return;
+      state.result = result;
+      /* 점검 중 화면은 기록에서 결과로 덮어쓴다 — 결과에서 뒤로 가면 고르는 화면으로 간다 */
+      go('report', { replace: true });
+    }, wait);
+  });
+}
+
+/* 점검 대상(본인·부모님)을 정하고 처음부터 시작한다.
+   고른 것·결과를 전부 비운다 — 본인 것과 부모님 것이 섞여 한쪽 결과가 다른 쪽 이름으로 보이면 안 된다.
+   토큰을 올려, 날아가던 점검이 있어도 그 결과가 이 화면에 닿지 못하게 한다.
+   화면 전환은 go() 그대로다(history.pushState). 뒤로가기는 위 popstate 규칙을 따른다 —
+   결과를 비웠으니 이전 결과 기록으로 돌아가도 고르는 화면으로 보낸다. */
+function beginFlow(subject) {
+  analyzeToken++;
+  state.subject = subject;
+  state.supplements = []; state.medicines = []; state.age = null; state.conditions = [];
+  state.result = null; state.emptyNotice = false; state.failed = false; state.step = 0;
+  go('supp');
+}
+
+
+/* ==========================================================================
+   9. 공유 · 복사 — 서비스 주소와 초대 표시(#invite=1)만. 고른 것·결과는 싣지 않는다.
+   ========================================================================== */
+/* 약국 QR판(/check/senior/)에서 보내도 초대는 일반판(/check/)으로 — 받는 사람은 약국이 아니라 카톡에서 온다 */
+function inviteUrl() {
+  return location.href.split('#')[0].split('?')[0].replace(/senior\/(index\.html)?$/, '') + '#invite=1';
+}
+function copyText(text, okMsg) {
+  const done = function () { toast(okMsg); };
+  const fail = function () { toast('복사하지 못했어요. 주소창의 주소를 직접 보내 주세요.'); };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(done).catch(function () { legacyCopy(text, done, fail); });
+  } else {
+    legacyCopy(text, done, fail);
+  }
+}
+function legacyCopy(text, done, fail) {
+  try {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.setAttribute('readonly', '');
+    ta.style.cssText = 'position:fixed;top:-1000px;opacity:0';
+    document.body.appendChild(ta);
+    ta.select();
+    const ok = document.execCommand('copy');
+    document.body.removeChild(ta);
+    if (ok) done(); else fail();
+  } catch (e) { fail(); }
+}
+function shareInvite() {
+  const url = inviteUrl();
+  if (navigator.share) {
+    navigator.share({ title: '모두의 복약', text: SHARE_TEXT, url: url }).catch(function () { /* 닫은 것 */ });
+    return;
+  }
+  copyText(SHARE_TEXT + '\n' + url, '링크를 복사했어요. 카카오톡에 붙여 넣어 보내 주세요.');
+}
+
+
+/* ==========================================================================
+   10. 동작
+   ========================================================================== */
+function listKey(v) { return v === 'medicines' ? 'medicines' : 'supplements'; }
+
+const ACTIONS = {
+  /* 첫 화면의 「내 조합 확인하기」는 본인 점검이다. 부모님 점검 도중 뒤로가기로 첫 화면에 와서 눌렀다면
+     부모님 쪽 고른 것을 비우고 본인 점검으로 시작한다. */
+  start: function () { if (state.subject !== 'self') beginFlow('self'); else go('supp'); },
+  back: function () { back(); },
+  'supp-toggle': function (el) {
+    state.supplements = toggleItem(state.supplements, el.dataset.label, NONE_SUPPLEMENT); changed();
+  },
+  'med-toggle': function (el) {
+    state.medicines = toggleItem(state.medicines, el.dataset.label, NONE_MEDICINE); changed();
+  },
+  age: function (el) { state.age = el.dataset.label; changed(); },
+  cond: function (el) { state.conditions = toggleItem(state.conditions, el.dataset.label, NONE_CONDITION); changed(); },
+  'open-manual': function (el) {
+    state.sheetTarget = listKey(el.dataset.target);
+    go(state.screen, { sheet: 'manual', keepScroll: true });
+  },
+  'close-sheet': function () { back(); },
+  'del-item': function (el) {
+    const key = listKey(el.dataset.target);
+    const label = el.dataset.label;
+    state[key] = state[key].filter(function (x) { return x !== label; });
+    changed();
+  },
+  'to-rx': function () { if (state.supplements.length > 0) go('rx'); },
+  analyze: function () {
+    if (!(state.medicines.length > 0 && state.age !== null)) return;
+    /* 영양제·약 둘 다 「없음」이면 대조할 것이 없다 (앱과 같은 안내) */
+    if (checkItems(currentDraft()).length === 0) { state.emptyNotice = true; render(); return; }
+    startAnalyze(false);
+  },
+  retry: function () { startAnalyze(true); },
+  repick: function () { go('supp'); },
+  restart: function () { beginFlow('self'); },              // 부모님 점검에서 눌러도 본인 점검으로 돌아간다
+  'parent-start': function () { beginFlow('parent'); },     // 결과 아래 「부모님 약 점검하기」 — 같은 화면을 한 번 더
+  'self-start': function () { beginFlow('self'); },         // 부모님 결과 아래 「내 조합 다시 확인하기」
+  share: function () { shareInvite(); },
+  'big-text': function () {
+    state.bigText = !state.bigText;
+    document.documentElement.classList.toggle('big-text', state.bigText);
+    render();
+  }
+};
+
+document.addEventListener('click', function (e) {
+  const el = e.target.closest('[data-act]');
+  if (!el || el.tagName === 'FORM') return;
+  const fn = ACTIONS[el.dataset.act];
+  if (!fn) return;
+  e.preventDefault();
+  fn(el);
+});
+
+document.addEventListener('submit', function (e) {
+  const form = e.target.closest('[data-act="add-manual"]');
+  if (!form) return;
+  e.preventDefault();
+  const input = document.getElementById('manual-input');
+  const value = input ? input.value : '';
+  const key = state.sheetTarget;
+  const noneLabel = key === 'medicines' ? NONE_MEDICINE : NONE_SUPPLEMENT;
+  const presets = key === 'medicines' ? MEDICINE_PRESETS : SUPP_ALL;
+  if (!value.trim()) return;
+  if (state[key].includes(value.trim())) { toast('이미 넣으셨어요'); return; }
+  const customs = state[key].filter(function (x) { return x !== noneLabel && !presets.includes(x); });
+  if (customs.length >= CUSTOM_MAX) { toast('직접 입력은 ' + CUSTOM_MAX + '개까지 넣을 수 있어요'); return; }
+  /* 앱 addItem 그대로 — 공백을 다듬고, 「없음」을 빼고, 뒤에 붙인다 */
+  state[key] = addItem(state[key], value, noneLabel);
+  changed();
+});
+
+
+/* ==========================================================================
+   11. 진입 — 언제나 랜딩부터. 주소에서 고른 것을 되살리지 않는다(싣지도 않는다).
+   ========================================================================== */
+/* 초대로 들어왔는지. 부울 하나뿐이라 개인정보가 아니다. */
+state.fromInvite = /(^|[#&])invite=1(&|$)/.test(location.hash);
+if (state.fromInvite || FROM_PHARMACY) {
+  /* 받는 사람(초대)·약국 QR로 온 분은 50~70대일 확률이 높다 — 글자를 처음부터 키워 둔다. */
+  state.bigText = true;
+  document.documentElement.classList.add('big-text');
+}
+/* 첫 기록도 pageUrl() 로 — 초대 표시 말고 다른 해시가 붙어 왔으면 덜어 낸다 */
+try { history.replaceState({ screen: 'landing', sheet: null, target: null }, '', pageUrl()); }
+catch (e) { state.histOk = false; }
+render();
+
+})();
+</script>
+</body>
+</html>
