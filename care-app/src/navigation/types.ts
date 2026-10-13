@@ -16,7 +16,10 @@ export type RootStackParamList = {
   Tabs: undefined;
   // medicines: 1분 점검에서 방금 대조한 이름(Case A) — 이 이름 그대로 알람을 맞춘다.
   // 없으면(알람 물음에서 온 Case C) 하루 횟수만 묻는다. 회의 2026-09-06·09-12.
-  VoiceGuide: { medicines?: string[] } | undefined;
+  // from "login": 결과 화면 저장 카드에서 로그인(가입)한 직후 — 알람 설정을 직접 고른 게 아니라
+  // 「나중에 설정할게요」를 보인다(회의 2026-10-11).
+  // saved: 방금 점검 결과를 서버에 저장했다 — 맨 위에 「분석 결과를 저장했어요」.
+  VoiceGuide: { medicines?: string[]; from?: "login"; saved?: boolean } | undefined;
   RegisterMethod: undefined;
   ButtonRegister: { editId?: string } | undefined;
   OcrRegister: undefined;

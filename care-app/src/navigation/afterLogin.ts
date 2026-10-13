@@ -13,6 +13,9 @@ type Nav = { reset: (state: { index: number; routes: Route[] }) => void };
 //   [홈, 점검 결과, 알람 설정] 으로 쌓는다. 알람 설정에서 뒤로 가면 결과로 돌아온다(회의 2026-10-06 취지).
 //   commit이 초안의 판정 결과를 비우므로 결과 화면에는 저장한 값을 params로 넘긴다. 저장에 실패하면
 //   초안에 결과가 남아 있어 params 없이 열어도 초안에서 읽는다(홈이 저장을 다시 시도한다).
+//   알람 설정에는 from: "login"을 넘겨 「나중에 설정할게요」(→ 홈)를 보이게 한다 — 결과 화면에는 더 이상
+//   「나중에 할게요」가 없으므로 알람은 여기서 건너뛴다(회의 2026-10-11). saved는 방금 서버에 저장했는지
+//   (맨 위에 「분석 결과를 저장했어요」를 보인다).
 // skip·returning: 새로 가입한 사람은 알람 설정 물음으로, 이미 쓰던 사람은 바로 홈으로.
 export async function continueAfterLogin(
   nav: Nav,
@@ -28,11 +31,13 @@ export async function continueAfterLogin(
   const pid = await getPatientId();
   let result: Route | null = null;
   let names: string[] = [];
+  let saved = false;
   try {
     const committed = pid ? await commitQuickCheckDraft(pid) : null;
     if (committed) {
       result = { name: "QuickCheckResult", params: resultParamsOf(committed) };
       names = checkItems(committed);
+      saved = true;
     }
   } catch (e) {
     console.warn("afterLogin: 점검 결과 저장 실패 — 홈에서 다시 시도한다", (e as Error)?.message ?? e);
@@ -45,7 +50,7 @@ export async function continueAfterLogin(
     }
   }
   const medicines = args.medicines && args.medicines.length > 0 ? args.medicines : names;
-  const alarm: Route = { name: "VoiceGuide", params: { medicines } };
+  const alarm: Route = { name: "VoiceGuide", params: { medicines, from: "login", saved } };
   const routes: Route[] = result ? [{ name: "Tabs" }, result, alarm] : [{ name: "Tabs" }, alarm];
   nav.reset({ index: routes.length - 1, routes });
 }

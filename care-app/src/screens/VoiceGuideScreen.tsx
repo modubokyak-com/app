@@ -27,6 +27,8 @@ import { colors, fontSizes, spacing, radii, shadows } from "../theme/tokens";
 // 안내는 글자로만, 대답은 화면 터치로만 받는다 — 소리·음성 인식 없음(2026-10-03).
 // 저장은 「설정 완료」에서 한다 — "끝났어요"를 보여 준 뒤에 저장하면 거기서 앱을 닫은 사람은
 // 알람이 없는데도 설정했다고 믿는다. 마치면 바로 홈이다(회의 2026-09-03).
+// 결과 화면에서 로그인(가입)한 직후(from "login")에는 「나중에 설정할게요」로 알람을 건너뛰고 홈으로 갈 수 있다 —
+// 로그인 전 결과 화면의 「나중에 할게요」를 없앴기 때문이다(회의 2026-10-11). saved면 맨 위에 저장했다고 알린다.
 
 type Step = "setup" | "done";
 
@@ -40,6 +42,8 @@ export function VoiceGuideScreen() {
   const [step, setStep] = useState<Step>("setup");
   const [sheetOpen, setSheetOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const fromLogin = route.params?.from === "login";
+  const saved = route.params?.saved === true;
 
   // 두 번 눌러 저장이 겹치지 않게 하는 동기 가드(state는 버튼 문구·비활성용).
   const savingRef = useRef(false);
@@ -122,6 +126,14 @@ export function VoiceGuideScreen() {
     nav.reset({ index: 0, routes: [{ name: "Tabs" }] });
   }
 
+  // 「나중에 설정할게요」(로그인 직후에만) — 알람 없이 홈으로. reset은 beforeRemove가 그냥 통과시키므로
+  // 「건너뜀」 로그는 여기서 한 번만 남긴다.
+  function later() {
+    if (savingRef.current) return;
+    void logGuideEvent({ step: "skipped", ...stats.current });
+    goHome();
+  }
+
   // 화면을 떠나는 모든 길(헤더 뒤로·안드로이드 뒤로·iOS 스와이프)을 여기서 받는다.
   // 저장 중에는 떠나지 않는다 — 저장이 끝난 뒤 앞 화면에서 다시 설정하면 같은 알람이 두 벌 생긴다.
   // 완료 뒤에도 앞 화면으로 돌아가지 않고 홈으로 간다 — 같은 이유. 코드가 부르는 reset(홈으로)은 그대로 통과.
@@ -156,6 +168,13 @@ export function VoiceGuideScreen() {
       <ScrollView contentContainerStyle={[styles.body, step === "done" && styles.bodyDone]}>
         {step === "setup" ? (
           <>
+            {/* 결과 화면에서 가입한 직후 — 방금 점검 결과를 저장했다는 확인 */}
+            {fromLogin && saved ? (
+              <View style={styles.savedRow}>
+                <Check size={20} color={colors.successGreen} />
+                <Text style={styles.savedText}>분석 결과를 저장했어요</Text>
+              </View>
+            ) : null}
             <Text style={styles.title}>{byMedicine ? "각 약을 언제 드세요?" : "하루에 몇 번 드세요?"}</Text>
             <Text style={styles.sub}>
               {byMedicine ? `방금 점검한 ${setup.medicines.length}가지예요` : "약과 영양제를 드시는 횟수예요"}
@@ -243,8 +262,11 @@ export function VoiceGuideScreen() {
 
       <View style={[styles.footer, { paddingBottom: spacing.md + insets.bottom }]}>
         {step === "setup" ? (
-          <BigButton label={saving ? "저장 중…" : "설정 완료"} onPress={() => { void finish(); }}
-            disabled={saving || !canFinish(setup)} />
+          <>
+            <BigButton label={saving ? "저장 중…" : "설정 완료"} onPress={() => { void finish(); }}
+              disabled={saving || !canFinish(setup)} />
+            {fromLogin ? <BigButton label="나중에 설정할게요" variant="secondary" onPress={later} disabled={saving} /> : null}
+          </>
         ) : (
           <>
             <BigButton label="홈으로 가기" onPress={goHome} />
@@ -302,6 +324,8 @@ const styles = StyleSheet.create({
   // flexGrow — 내용이 짧으면 spacer가 늘어나 배너를 아래로 민다
   body: { flexGrow: 1, paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.md },
   bodyDone: { paddingTop: spacing.lg, gap: spacing.md },
+  savedRow: { flexDirection: "row", alignItems: "center", gap: spacing.xs, marginBottom: spacing.sm },
+  savedText: { fontSize: fontSizes.body, fontWeight: "700", color: colors.successGreen },
   title: { fontSize: 27, lineHeight: 38, fontWeight: "800", color: colors.primaryNavy, letterSpacing: -0.7 },
   sub: { marginTop: 6, fontSize: fontSizes.body, lineHeight: 27, fontWeight: "600", color: colors.textSecondary, letterSpacing: -0.3 },
 

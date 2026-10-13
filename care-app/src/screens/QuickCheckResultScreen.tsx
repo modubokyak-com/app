@@ -20,13 +20,16 @@ import { colors, fontSizes, spacing, radii, minTouch, shadows } from "../theme/t
 
 // 점검 결과 — 회의 2026-09-10(B안, 목업 B-1): 종류별로 전부 보여 준다.
 // 결과 잠금(첫 건만 공개, 카카오 연결로 해제 — dba43a5)은 회의 2026-10-08에 없앴다. 누구에게나 전부 보인다.
-// 점검은 로그인 없이 된다. 아래 버튼 (회의 2026-10-09):
+// 점검은 로그인 없이 된다. 아래 버튼 (회의 2026-10-09, 로그인 전은 회의 2026-10-11로 바뀜):
 //   로그인 전 — 저장 카드(가입하면 이 결과를 저장하고 다시 볼 수 있다 + 「카카오로 시작하기」, iOS는 Apple도)에서
 //     이 화면에서 바로 로그인한다(useSignIn, purpose "save": 쓰던 계정이면 결과 저장 후 알람 설정, 처음이면 동의 화면).
-//     그 아래 「복용분석 다시하기」 · 「나중에 할게요」(인트로 시작 장 — 로그인 없이 쓸 수 있는 건 점검뿐이다).
+//     그 아래 「복용분석 다시하기」 하나만 둔다. 「나중에 할게요」는 뺐다 — 인트로 시작 장으로 되돌아가서
+//     점검으로 되돌아가는 것처럼 보여 「복용분석 다시하기」와 헷갈렸다. 로그인 전에는 가입만 앞으로 가는 길이고,
+//     알람은 가입 뒤 알람 설정 화면에서 「나중에 설정할게요」로 건너뛴다.
 //   로그인 후 — 「복용 알람 시간 정하기」(결과를 저장하고 알람 설정으로) · 「복용분석 다시하기」 · 「나중에 할게요」(홈).
 //   지난 결과에서 열면(from: "history") — 「복용분석 다시하기」 · 「닫기」.
-//   대조한 이름이 2개 미만이면 저장할 조합 결과가 없다 — 「다시 고르기」 · 「나중에 할게요」.
+//   대조한 이름이 2개 미만이면 저장할 조합 결과가 없다 — 「다시 고르기」 + 로그인 후엔 「나중에 할게요」(홈),
+//     로그인 전엔 「건너뛰고 시작하기」(로그인 화면, 점검 실패 화면과 같은 길).
 // 결과 데이터: 앞 화면(Analyzing·로그인 직후·지난 점검)이 params로 넘긴 것을 우선 쓰고,
 // 없으면(로그인 전이거나 저장 실패로 초안이 남은 경우) 기기 초안에서 읽는다.
 
@@ -162,7 +165,8 @@ export function QuickCheckResultScreen() {
       leaving.current = false;
     }
   }
-  // 로그인 전이면 홈이 없다 — 인트로 시작 장(1분 점검 · 건너뛰기 · 로그인)으로 돌아간다.
+  // 로그인 후 「나중에 할게요」 → 홈. 로그인 전 화면에는 이 버튼이 없지만(회의 2026-10-11),
+  // 로그인 전이면 홈이 없어 인트로 시작 장(1분 점검 · 건너뛰기 · 로그인)으로 돌아가게 둔다 — 방어용.
   async function later() {
     if (leaving.current || isBusy()) return;
     leaving.current = true;
@@ -180,6 +184,11 @@ export function QuickCheckResultScreen() {
     if (leaving.current || isBusy()) return;
     if (fromHistory) nav.navigate("QuickCheckInput");
     else nav.reset({ index: 0, routes: [{ name: "QuickCheckInput", params: { from: "intro" } }] });
+  }
+  // 로그인 전, 대조할 조합이 없을 때 — 점검 실패 화면(QuickCheckAnalyzing)의 「건너뛰고 시작하기」와 같은 길(로그인 화면).
+  function skipToLogin() {
+    if (leaving.current || isBusy()) return;
+    nav.navigate("Login", { purpose: "skip" });
   }
   // 시스템 공유 시트 — 카카오톡은 여기서 고른다(카카오 SDK 없음). 취소는 조용히, 실패만 알린다.
   async function share() {
@@ -294,10 +303,14 @@ export function QuickCheckResultScreen() {
             <BigButton label="닫기" variant="secondary" onPress={() => nav.goBack()} />
           </View>
         ) : null}
-        {state.phase === "ok" && !fromHistory && nothingChecked ? (
+        {state.phase === "ok" && !fromHistory && nothingChecked && signedIn !== null ? (
           <View style={styles.actions}>
             <BigButton label="다시 고르기" onPress={recheck} showArrow />
-            <BigButton label="나중에 할게요" variant="secondary" onPress={() => { void later(); }} />
+            {signedIn ? (
+              <BigButton label="나중에 할게요" variant="secondary" onPress={() => { void later(); }} />
+            ) : (
+              <BigButton label="건너뛰고 시작하기" variant="secondary" onPress={skipToLogin} />
+            )}
           </View>
         ) : null}
         {state.phase === "ok" && !fromHistory && !nothingChecked && signedIn === true ? (
@@ -316,7 +329,6 @@ export function QuickCheckResultScreen() {
               <SignInButtons kakaoLabel="카카오로 시작하기" busy={busy} onPress={(kind) => { void signIn(kind); }} />
             </View>
             <BigButton label="복용분석 다시하기" variant="secondary" onPress={recheck} disabled={busy !== null} />
-            <BigButton label="나중에 할게요" variant="secondary" onPress={() => { void later(); }} disabled={busy !== null} />
           </View>
         ) : null}
 
