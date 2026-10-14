@@ -28,8 +28,9 @@ import { colors, fontSizes, spacing, radii, minTouch, shadows } from "../theme/t
 //     알람은 가입 뒤 알람 설정 화면에서 「나중에 설정할게요」로 건너뛴다.
 //   로그인 후 — 「복용 알람 시간 정하기」(결과를 저장하고 알람 설정으로) · 「복용분석 다시하기」 · 「나중에 할게요」(홈).
 //   지난 결과에서 열면(from: "history") — 「복용분석 다시하기」 · 「닫기」.
-//   대조한 이름이 2개 미만이면 저장할 조합 결과가 없다 — 「다시 고르기」 + 로그인 후엔 「나중에 할게요」(홈),
-//     로그인 전엔 「건너뛰고 시작하기」(로그인 화면, 점검 실패 화면과 같은 길).
+//   대조한 이름이 2개 미만이면 조합 결과가 없다 — 「다시 고르기」 + 로그인 후엔 「나중에 할게요」(홈),
+//     로그인 전엔 가입 카드(가입하면 복용 알람을 맞춰 드린다 + 「카카오로 시작하기」). 위 저장 카드와 같은 길이라
+//     가입 뒤 고른 이름 그대로 알람 설정으로 간다(「나중에 설정할게요」도 있다). 회의 2026-10-11 취지, 사용자 확인 2026-10-14.
 // 결과 데이터: 앞 화면(Analyzing·로그인 직후·지난 점검)이 params로 넘긴 것을 우선 쓰고,
 // 없으면(로그인 전이거나 저장 실패로 초안이 남은 경우) 기기 초안에서 읽는다.
 
@@ -185,11 +186,6 @@ export function QuickCheckResultScreen() {
     if (fromHistory) nav.navigate("QuickCheckInput");
     else nav.reset({ index: 0, routes: [{ name: "QuickCheckInput", params: { from: "intro" } }] });
   }
-  // 로그인 전, 대조할 조합이 없을 때 — 점검 실패 화면(QuickCheckAnalyzing)의 「건너뛰고 시작하기」와 같은 길(로그인 화면).
-  function skipToLogin() {
-    if (leaving.current || isBusy()) return;
-    nav.navigate("Login", { purpose: "skip" });
-  }
   // 시스템 공유 시트 — 카카오톡은 여기서 고른다(카카오 SDK 없음). 취소는 조용히, 실패만 알린다.
   async function share() {
     setShareOpen(false);
@@ -305,11 +301,14 @@ export function QuickCheckResultScreen() {
         ) : null}
         {state.phase === "ok" && !fromHistory && nothingChecked && signedIn !== null ? (
           <View style={styles.actions}>
-            <BigButton label="다시 고르기" onPress={recheck} showArrow />
+            <BigButton label="다시 고르기" onPress={recheck} showArrow disabled={busy !== null} />
             {signedIn ? (
               <BigButton label="나중에 할게요" variant="secondary" onPress={() => { void later(); }} />
             ) : (
-              <BigButton label="건너뛰고 시작하기" variant="secondary" onPress={skipToLogin} />
+              <View style={styles.saveCard}>
+                <Text style={styles.saveTitle} accessibilityRole="header">{"가입하면 복용 알람을\n맞춰 드려요"}</Text>
+                <SignInButtons kakaoLabel="카카오로 시작하기" busy={busy} onPress={(kind) => { void signIn(kind); }} />
+              </View>
             )}
           </View>
         ) : null}
