@@ -306,7 +306,10 @@ export function QuickCheckResultScreen() {
               <BigButton label="나중에 할게요" variant="secondary" onPress={() => { void later(); }} />
             ) : (
               <View style={styles.saveCard}>
-                <Text style={styles.saveTitle} accessibilityRole="header">{"가입하면 복용 알람을\n맞춰 드려요"}</Text>
+                {/* 한 줄로 — 좁은 화면에서는 줄이 바뀌며 단어가 쪼개지지 않게 글자를 조금 줄인다 */}
+                <Text style={styles.saveTitle} accessibilityRole="header" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
+                  가입하면 복용 알람을 맞춰 드려요
+                </Text>
                 <SignInButtons kakaoLabel="카카오로 시작하기" busy={busy} onPress={(kind) => { void signIn(kind); }} />
               </View>
             )}
