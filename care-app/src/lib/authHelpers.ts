@@ -130,7 +130,7 @@ export function emailAuthErrorMessage(err: AuthErrorLike, mode: "login" | "signu
   }
   if (code === "weak_password" || (/password/i.test(msg) && /at least|short|weak/i.test(msg))) return PASSWORD_TOO_SHORT;
   if (code === "email_not_confirmed" || /not confirmed/i.test(msg)) return "이메일 확인이 아직 안 됐어요. 잠시 후 다시 시도해 주세요.";
-  if (code === "signup_disabled" || code === "email_provider_disabled" || /signups? (are )?not allowed|(logins|signups) are disabled/i.test(msg)) {
+  if (code === "signup_disabled" || code === "email_provider_disabled" || /signups? (are )?not allowed|(logins?|signups?) (is|are) disabled/i.test(msg)) {
     return "지금은 이메일 가입을 받지 않아요.";
   }
   if (status === 429 || code === "over_request_rate_limit" || code === "over_email_send_rate_limit" || /rate limit|too many/i.test(msg)) {
