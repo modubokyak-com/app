@@ -1,7 +1,8 @@
 # Google Play 심사 준비 점검 — 2026-10-09
 
-검증 기준: `main` d78fab2, 작업 브랜치 `codex/play-review-readiness-20261009`.
+검증 기준: `main` a28e449, 작업 브랜치 `codex/privacy-policy-readiness-20261011`.
 오프라인 반복 알람/outbox 구현 및 재검증: 2026-10-10.
+최신 원격 main 및 개인정보 초안 재검증: 2026-10-15.
 Android 신규 제출 대상은 `com.care.bokyak`이다. `com.modoobokyak.app`은 옛 Console 앱이며
 이번 Android 제출 대상으로 되돌리지 않는다.
 
@@ -15,9 +16,9 @@ Android 신규 제출 대상은 `com.care.bokyak`이다. `com.modoobokyak.app`�
    현재 코드와 다르다. 심사자가 제한 기능을 모두 확인할 수 있도록 Play Console의 앱 액세스에
    Kakao 로그인 가능한 심사 경로를 보안 방식으로 제공하거나, 별도 심사 접근 방식을 제품 결정해야 한다.
    비밀번호·OTP를 저장소나 채팅에 기록하지 않는다.
-3. 개인정보처리방침과 계정 삭제 웹 페이지의 운영자/문의 이메일이 조직 전환 정보와 다르다.
-   제출 전 회사 `(주)안팜 / AhnPharm Inc.`와 `official@modubokyak.com` 반영 범위 및 시행일을
-   승인받아 앱 내 문서, 웹 문서, Console 입력을 함께 맞춰야 한다.
+3. 공개 정책/삭제 페이지에는 회사와 문의 이메일이 반영됐지만, 보관·즉시 삭제·OpenAI 보관 기간·
+   처리 지역 등 운영 설정으로 확인하지 않은 단정이 남아 있다. 앱 내 정책은 코드 흐름에 맞춘 수정안을
+   이 작업 브랜치에 준비했으며, 공개 웹 원본·Console 입력과 함께 법무/운영 승인 후 확정해야 한다.
 4. 건강 앱 선언, 데이터 보안, 정확한 알람, 전체 화면 인텐트, 포그라운드 서비스 선언은
    Console에서 미확인이다. 코드만으로 완료 처리하지 않는다.
 5. 실제 Android 14+ 기기에서 알림 거부/철회, 정확한 알람 거부/철회, 잠금 화면,
@@ -27,9 +28,9 @@ Android 신규 제출 대상은 `com.care.bokyak`이다. `com.modoobokyak.app`�
    확인되지 않았다. 가입 동의 전 1분 점검은
    약 이름·나이·질환을 Supabase RPC로 전송한다. 최초 전송 전 고지/동의 방식과 OpenAI 처리
    범위 문구는 개인정보 결정 사항으로 승인받아 앱/웹/Console을 함께 수정해야 한다.
-7. 저장소에는 인증 전환 1단계의 permissive 정책과 2단계 lockdown 마이그레이션이 모두 있다.
-   운영 DB에 lockdown이 적용됐는지 확인하지 못했다. 실제 노출로 단정하거나 여기서 운영
-   정책을 변경하지 말고, Supabase 운영 정책을 읽기 전용으로 검증한다.
+7. 운영 DB에서 2026-10-11 lockdown 적용을 별도 검증했다. 공개 정책 14개와 여섯 사용자 테이블의
+   `anon` 권한은 제거됐고, 소유자 정책 16개·공개 참조 조회/검색만 유지됐다. 옛 `link_kakao`는
+   차단됐으며 인증 사용자 삭제와 UNIQUE/FK는 유지됐다. 실제 서비스 계정 삭제는 실행하지 않았다.
 8. 2026-10-10 코드 수정으로 다음 회차는 계정별 로컬 일정 사본에서 재예약한다. 앱 시작·재부팅·
    시간대 변경 시 서버 조회가 실패해도 마지막 동기화 일정으로 복구하며, 일정 수정·삭제와 로그아웃·
    계정 전환·회원 삭제 때 사본을 갱신하거나 제거한다. 다만 제조사 절전 정책까지 포함한 실제 다음 날
@@ -51,23 +52,26 @@ Android 신규 제출 대상은 `com.care.bokyak`이다. `com.modoobokyak.app`�
 3. **심사자 접근:** 저장·알람은 Kakao 로그인이 필요하므로 전용 심사 계정을 준비해 자격정보를
    Play Console의 보안 앱 액세스 입력란에만 넣는 안을 권장한다. 인증 우회 빌드는 별도 보안 변경이므로
    승인 없이 만들지 않는다.
-4. **운영 RLS:** live DB에서 본인 행 정책, `intake_records(schedule_id, scheduled_for)` unique 제약,
-   anon 권한 제거 여부를 읽기 전용으로 확인한다. lockdown 미적용이면 새 빌드 전환 시점과 구버전
-   호환 종료를 승인한 뒤 마이그레이션하며, 이번 작업에서는 실행하지 않는다.
+4. **운영 RLS:** 2026-10-11 적용 검증 완료. 이후 정책 변경 시 같은 항목(본인 행 정책,
+   `intake_records(schedule_id, scheduled_for)` unique 제약, anon 권한)을 다시 점검한다.
 
 ## 코드·빌드 확인
 
 - Expo SDK 54 / React Native 0.81.5의 Android 설정은 minSdk 24, targetSdk 36,
   compileSdk 36이다.
-- `app.json`: Android package `com.care.bokyak`, versionCode 16.
+- `app.json`: Android package `com.care.bokyak`, 로컬 versionCode 16. production의
+  `autoIncrement: true`가 원격 빌드에서 versionCode를 올리며, 기존 검증 산출물은 v17이다.
 - `eas.json`: production Android buildType `app-bundle`.
+- 검증한 v17 이후 원격 main의 앱 변경은 공유 링크를 웹 1분 점검으로 바꾼 것과 iOS 공유창 수정,
+  iOS buildNumber 변경이다. Android 알람·인증·데이터 흐름 변경은 없다. 이 개인정보 초안을 포함해
+  새 Android AAB를 만들 경우 원격 autoIncrement 상태를 확인해 사용하지 않은 versionCode를 받아야 한다.
 - 알림 권한: POST_NOTIFICATIONS, SCHEDULE_EXACT_ALARM, USE_FULL_SCREEN_INTENT,
   FOREGROUND_SERVICE, WAKE_LOCK. 실제 Console 선언과 기기 허용 여부는 별도 확인이 필요하다.
 - Notifee foreground service는 라이브러리 manifest에서 `shortService`로 선언된다.
 - foreground service 콜백은 165초에 종료되도록 제한해 Android의 short-service 제한을 넘겨
   무기한 대기하지 않는다. 4분 이상 실제 기기 방치 시 ANR이 없는지는 별도 확인한다.
 - 계정 삭제: 앱 안의 설정/개인정보 화면에서 `delete_my_account` RPC를 호출하고,
-  웹 삭제 안내 URL은 `https://modubokyak.vercel.app/delete-account.html`이다.
+  웹 삭제 안내 URL은 `https://modubokyak.com/delete/`이다. 옛 Vercel URL은 이 주소로 리디렉션한다.
 - 로컬 건강 데이터: 다음 알람에 필요한 일정 id·약 이름·시간·요일만 계정별로 저장한다. 미전송
   복약 기록 outbox는 일정 id·예정 시각·상태·응답 방식만 저장하며 로그아웃·전환·삭제 시 제거한다.
 
@@ -90,8 +94,8 @@ Android 신규 제출 대상은 `com.care.bokyak`이다. `com.modoobokyak.app`�
 - 앱/패키지: 모두의 복약 / `com.care.bokyak`
 - 개발자 계정: Carenavi 조직 계정
 - 회사/문의: `(주)안팜 / AhnPharm Inc.` / `official@modubokyak.com` (정책 문서 반영 승인 필요)
-- 개인정보처리방침: `https://modubokyak.vercel.app/privacy.html`
-- 계정 삭제: `https://modubokyak.vercel.app/delete-account.html`
+- 개인정보처리방침: `https://modubokyak.com/privacy/`
+- 계정 삭제: `https://modubokyak.com/delete/`
 - 건강 기능: 복약 일정·알림 및 약물 상호작용 1분 점검
 - 비의료기기 고지: 진단·처방·치료를 대체하지 않으며 의사·약사 상담이 필요하다는 문구가
   앱 개인정보 화면과 스토어 설명 초안에 있다. 실제 스토어 입력을 확인해야 한다.
@@ -102,11 +106,11 @@ Android 신규 제출 대상은 `com.care.bokyak`이다. `com.modoobokyak.app`�
 
 ## 수행 검사
 
-- 통과: `npm test -- --runInBand` — 50 suites, 467 tests.
+- 통과(2026-10-15 재검증): `npm test -- --runInBand` — 51 suites, 471 tests.
 - 통과: 계정 전환 중 outbox 응답, 알람 화면 경로 변경, 지연된 알람 서버 스냅샷,
   1분 점검 초안 hydration 지연/실패의 경쟁 상태 회귀 테스트. 이는 정적·단위 재현이며
   실제 Android 기기에서 발생 또는 해결됐음을 뜻하지 않는다.
-- 통과: `npx tsc --noEmit`.
+- 통과(2026-10-15 재검증): `npx tsc --noEmit`.
 - 통과: Expo introspection — package/versionCode/권한/receiver 생성 확인.
 - 부분 실패: `npm run check:server` — 공개 프리셋 칩만 순차 검사하던 중 `항우울제`
   성공 다음 호출이 statement timeout(HTTP 500)으로 종료됐다. 다음 프리셋인
@@ -120,18 +124,23 @@ Android 신규 제출 대상은 `com.care.bokyak`이다. `com.modoobokyak.app`�
   복구하고, 완료/미루기는 로컬 알람 제어 후 영구 outbox를 거쳐 서버 기록을 시도한다.
 - 한계: 자동 테스트로 로컬 재예약·outbox 재전송·계정 격리·반복 클릭을 검증했지만 실제 기기 전달과
   서버 측 “정확히 한 번” 전송을 보장한 것은 아니다.
-- 통과: `npx expo export --platform android --clear` — 3,322 modules, Android Hermes bundle 6.37 MB.
-- 미실행: production AAB 서명 빌드 및 16 KB 정렬 검사(원격 EAS 인증/빌드 필요).
+- 통과(2026-10-15 재검증): `npx expo export --platform android --clear` — 3,323 modules,
+  Android Hermes bundle 6.37 MB. 첫 시도는 Windows 샌드박스 TEMP 쓰기 제한으로 실패했고 정상 환경 재실행은 통과했다.
+- 통과: v17 production AAB/APK 생성과 target SDK 36, 기존 서명 연속성, 16 KB 정렬을 확인했다.
 - 미실행: 실제 기기 알람·권한·절전·재부팅·시간대·동시성 테스트.
 - 미확인: Play Console 실시간 상태와 프로덕션 제출 자격.
+- 부분 통과(사용자 확인, 2026-10-11): v17에서 기본 로그인, 일정 저장, 알람 울림을 확인했다.
+  기기 모델·Android 버전·권한 상태와 잠금 화면/오프라인/재부팅 등 세부 조건은 기록되지 않아
+  아래 실기기 QA 전체 통과로 확대 해석하지 않는다.
 
 ## 최소 다음 조치
 
 1. 로그인된 Play Console 브라우저를 연결하고 `com.care.bokyak` 앱의 대시보드,
    프로덕션 접근, 앱 콘텐츠, 데이터 보안, 건강 앱, 전체 화면 인텐트/FGS 선언을 읽기 전용으로 확인한다.
 2. 회사명·문의 이메일·시행일과 심사 접근 방식을 승인한다.
-3. 승인 후 정책 문서/심사 메모를 일치시키고 production AAB를 한 번 생성한다.
-4. AAB의 target SDK, 서명, manifest, 네이티브 라이브러리 16 KB 정렬을 검사한 뒤 실제 기기 표를 수행한다.
+3. 승인 후 정책 원본/앱/심사 메모를 일치시킨다.
+4. v17 AAB는 target SDK 36, 기존 서명 연속성, 16 KB 정렬을 확인했다. 이 AAB로 남은 실제 기기
+   권한·잠금 화면·오프라인·절전·재부팅·시간대·동시 알람·수정/삭제 표를 수행한다.
 
 최종 제출, PR, 병합, 배포는 아직 하지 않는다.
 
@@ -149,9 +158,9 @@ Android 신규 제출 대상은 `com.care.bokyak`이다. `com.modoobokyak.app`�
 
 ### 제출 전 필수 확인
 
-- 실제 Android 기기 QA, live RLS/unique 제약, Play Console 대상 패키지·프로덕션 자격·필수 선언.
+- 남은 실제 Android 기기 QA, Play Console 대상 패키지·프로덕션 자격·필수 선언.
 - 개인정보처리방침·가입 전 건강정보 동의·데이터 보안 신고·심사자 Kakao 접근 결정 및 반영.
-- 새 서명 AAB 생성 후 target SDK·manifest·16 KB 정렬 검증.
+- 공개 정책의 보관/삭제/국외 처리 문구 운영 확인 및 앱·웹·Console 동기화.
 
 ### 선택 개선
 
