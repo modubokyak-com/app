@@ -20,6 +20,8 @@ it("describes pre-login transfer and optional OpenAI flows", () => {
 it("does not claim Apple email collection or universal immediate deletion", () => {
   expect(policyText).not.toContain("Apple은 회원 식별값과 사용자가 허용한 이름·이메일");
   expect(policyText).not.toContain("즉시 삭제");
+  // 이용 통계는 90일 자동 삭제(supabase/migrate-usage-retention.sql) — 방침과 서버 작업이 같은 숫자여야 한다.
+  expect(policyText).toContain("90일이 지나면 서버에서 자동으로 삭제");
   expect(policyText).not.toContain("복구할 수 없습니다");
 });
 
