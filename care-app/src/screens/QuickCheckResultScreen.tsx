@@ -182,13 +182,18 @@ export function QuickCheckResultScreen() {
     else nav.reset({ index: 0, routes: [{ name: "QuickCheckInput", params: { from: "intro" } }] });
   }
   // 시스템 공유 시트 — 카카오톡은 여기서 고른다(카카오 SDK 없음). 취소는 조용히, 실패만 알린다.
+  // 아래 「가족과 지인도…」 시트(Modal)는 공유창이 닫힌 뒤에 닫는다. iOS 는 Modal 이 닫히는 도중에는
+  // 공유창을 띄우지 못해, 시트를 먼저 닫으면 아무것도 안 뜨고 시트만 내려간다(2026-10-15 시뮬레이터에서 재현).
+  // 공유창은 시트 위에 뜨고, iOS 공유창 안의 「복사」로 링크만 복사할 수도 있다.
   async function share() {
-    setShareOpen(false);
     try {
       await Share.share({ message: buildQuickCheckShareMessage() });
     } catch (e) {
-      Alert.alert("보내지 못했어요", e instanceof Error && e.message ? e.message : "잠시 후 다시 시도해 주세요.");
+      Alert.alert("보내지 못했어요", e instanceof Error && e.message ? e.message : "잠시 후 다시 시도해 주세요.",
+        [{ text: "확인", onPress: () => setShareOpen(false) }]);
+      return;
     }
+    setShareOpen(false);
   }
 
   const findings = state.phase === "ok" ? state.findings : [];
