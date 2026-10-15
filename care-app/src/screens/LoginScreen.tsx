@@ -13,8 +13,9 @@ const LOGO_CARD = 104;
 const LOGO_SIZE = 80;
 const IOS = Platform.OS === "ios";
 
-// 간편 로그인 — 회의 2026-10-08. 비밀번호·이메일·전화번호는 없다.
-// 안드로이드는 카카오만, iOS는 카카오 + Apple(App Store 가이드라인 4.8: 다른 회사 로그인을 두면 Apple도 둔다).
+// 로그인 — 회의 2026-10-08. 전화번호 로그인은 없다.
+// 간편 로그인: 안드로이드는 카카오, iOS는 카카오 + Apple(App Store 가이드라인 4.8: 다른 회사 로그인을 두면 Apple도 둔다).
+// 이메일·비밀번호(2026-10-15): 「이메일로 계속하기」 → EmailLogin 화면. 스토어 심사자와 간편 로그인을 못 쓰는 사람용.
 // 1분 점검은 로그인 없이 되고, 점검을 건너뛸 때·쓰던 계정으로 들어올 때 여기로 온다.
 // 점검 결과를 저장하는 로그인은 결과 화면에서 바로 한다(회의 2026-10-09) — "save"로 여기 오는 건
 // 결과 화면이 로그인된 줄 알았는데 그새 세션이 없어진 경우뿐이다.
@@ -28,7 +29,7 @@ const COPY: Record<LoginPurpose, { title: string; sub: string }> = {
     sub: "로그인하면 휴대폰을 바꿔도 점검 결과와 알람이 그대로 남아요.",
   },
   skip: {
-    title: IOS ? "카카오나 Apple로\n간편하게 시작해요" : "카카오로\n간편하게 시작해요",
+    title: IOS ? "카카오·Apple·이메일로\n간편하게 시작해요" : "카카오나 이메일로\n간편하게 시작해요",
     sub: "로그인하면 약 알람과 복약 기록을 모아 둘 수 있어요.",
   },
   returning: {
@@ -69,10 +70,15 @@ export function LoginScreen() {
       </ScrollView>
 
       <View style={[styles.footer, { paddingBottom: spacing.lg + insets.bottom }]}>
-        <SignInButtons kakaoLabel="카카오로 계속하기" busy={busy} onPress={(kind) => { void signIn(kind); }} />
+        <SignInButtons
+          kakaoLabel="카카오로 계속하기"
+          busy={busy}
+          onPress={(kind) => { void signIn(kind); }}
+          onEmail={() => { if (!isBusy()) nav.navigate("EmailLogin", { purpose, medicines }); }}
+        />
 
         <Text style={styles.note}>
-          {IOS ? "비밀번호 없이 카카오·Apple 계정으로 로그인해요." : "비밀번호 없이 카카오 계정으로 로그인해요."}
+          {IOS ? "카카오·Apple 계정이나 이메일로 로그인해요." : "카카오 계정이나 이메일로 로그인해요."}
         </Text>
       </View>
     </View>

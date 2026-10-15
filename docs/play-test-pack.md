@@ -94,17 +94,30 @@
 
 ### B-3. 앱 액세스 권한 메모 / 검토 메모 (심사자용)
 
-> **현재 코드와 불일치 — 그대로 제출 금지:** 로그인 없이 1분 점검 입력·결과 확인은 가능하지만,
-> 결과 저장과 복약 알람 설정은 Android에서 Kakao 로그인이 필요하다. 아래 기존 문구의
-> “모든 기능을 바로 쓸 수 있음”, “카카오가 심사에 필요 없음”은 삭제하고, Play Console의
-> 제한 기능 접근란에 실제로 동작하는 심사 접근 수단과 영어 단계별 안내를 제공해야 한다.
+Android에서 1분 점검(입력·결과 확인)은 로그인 없이 되지만, **결과 저장과 복약 알람은 로그인이 필요하다**
+(카카오 또는 이메일·비밀번호 — 이메일 로그인은 2026-10-15에 심사 접근용으로 추가). 그래서 앱 액세스 권한은
+「모든 기능 또는 일부 기능이 제한됨」으로 답하고, 심사자가 쓸 **이메일 계정을 Play Console에 등록**한다.
+심사용 계정은 미리 가입해 두고 동의·이름까지 마쳐 둔다(심사자가 동의 화면을 거치지 않게).
+
+Play Console → 앱 콘텐츠 → 앱 액세스 권한 → "로그인 세부정보 추가(Add sign in details)" 폼:
+
+| 칸 | 넣을 값 |
+|---|---|
+| Name (안내 이름) | `Reviewer email account` |
+| Username (사용자 이름) | `play-review@modubokyak.com` |
+| Password (비밀번호) | `<Play Console에만 입력>` — 이 문서·저장소·채팅에 적지 않는다 |
+| Any other information (기타 안내) | 아래 영어 블록 |
 
 ```
-이 앱은 로그인이 없습니다. 첫 화면에서 "지금은 건너뛰기"를 누르고 이름을 입력하면 모든 기능을 바로 쓸 수 있습니다.
-카카오 로그인 버튼은 휴대폰을 바꿨을 때 기존 정보를 불러오는 선택 기능이며, 심사에 필요하지 않습니다. 심사자 본인의 카카오 계정으로 시도하셔도 됩니다.
-알람 확인 방법: 알람 설정 화면에서 시각을 현재보다 2분 뒤로 맞추고 홈으로 간 뒤 화면을 끄면, 잠금 화면 위로 알람 화면이 뜹니다.
-1분 복용 점검과 약장은 인터넷 연결이 필요합니다. 점검 예: 영양제 "철분" + 약 "갑상선약" → "확인 필요 1건".
+The 1-minute medication check works without signing in. Saving results and medication alarms require sign-in.
+Sign-in methods: Kakao, or email + password. Use the email account above.
+Steps: open the app → run the 1-minute check (tap any supplement/medicine buttons, then "점검하기") → on the result screen tap "이메일로 계속하기" → enter the email and password → you reach the home screen (consent and name are already set for this account).
+Alarm check: Home → add a medicine → set a time 2 minutes ahead → lock the screen; the alarm screen appears over the lock screen.
+No 2-step verification, SMS or OTP is needed.
 ```
+
+> 비밀번호 재설정 메일은 아직 없다(SMTP 미설정). 심사용 계정 비밀번호를 잃으면 Supabase 대시보드에서 바꾸고
+> Play Console 값도 함께 바꾼다.
 
 ### B-4. 데이터 보안(Data safety)
 
@@ -114,10 +127,14 @@
 |---|---|---|---|---|---|
 | 개인 정보 › 이름 | 예 | 아니오 | 아니오 | 필수 | 앱 기능 |
 | 개인 정보 › 사용자 ID (카카오 회원번호) | 예 | 아니오 | 아니오 | 선택 | 앱 기능 |
+| 개인 정보 › 이메일 주소 (이메일 로그인 계정) | 예 | 아니오 | 아니오 | 선택 | 계정 관리 |
 | 건강 및 피트니스 › 건강 정보 (복약 일정·기록·점검 입력과 결과) | 예 | 아니오 | 아니오 | 필수 | 앱 기능 |
 | 사진 및 동영상 › 사진 (약봉투) | 예 | 아니오 | **예** | 선택 | 앱 기능 |
 | 앱 활동 › 앱 상호작용 (알람 울림·응답 시각) | 예 | 아니오 | 아니오 | 필수 | 분석 |
 | 그 외 전부 | 아니오 | | | | |
+
+> 비밀번호는 Data safety의 수집 데이터 유형이 아니다(Google 분류에 없음) — 따로 적지 않는다. Supabase Auth가
+> 해시로만 저장하고 앱·운영자가 원문을 볼 수 없다. 이메일 주소 행은 2026-10-15 이메일 로그인 추가에 따라 생겼다.
 
 ### B-5. 전체 화면 인텐트 선언
 

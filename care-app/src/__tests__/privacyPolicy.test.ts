@@ -23,6 +23,13 @@ it("does not claim Apple email collection or universal immediate deletion", () =
   expect(policyText).not.toContain("복구할 수 없습니다");
 });
 
+it("lists the email login data and the password-storage note (2026-10-15)", () => {
+  expect(policyText).toContain("이메일 로그인: 이메일 주소, 비밀번호");
+  expect(policyText).toContain("비밀번호는 암호화되어 저장되며 저희도 볼 수 없습니다");
+  // 전화번호는 여전히 받지 않는다
+  expect(policyText).toContain("전화번호, 위치 정보는 받지 않습니다");
+});
+
 it("matches the deployed policy effective date under review", () => {
   expect(PRIVACY_POLICY_EFFECTIVE_DATE).toBe("2026년 10월 11일");
 });

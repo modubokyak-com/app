@@ -6,9 +6,11 @@
 ## 무엇을 만드는가
 
 - **앱:** React Native + Expo (managed), TypeScript. 코드는 `care-app/`에 있다.
-- **백엔드:** Supabase Postgres + **Supabase Auth 간편 로그인**(안드로이드 카카오, iOS 카카오+Apple —
-  이메일·전화·비밀번호 없음, 회의 2026-10-08). 1분 점검은 로그인 없이 되고, 결과 저장·알람부터
-  로그인한다(처음이면 동의 화면). 로그인 계정 하나에 환자 행 하나(`patients.user_id`).
+- **백엔드:** Supabase Postgres + **Supabase Auth 간편 로그인**(안드로이드 카카오, iOS 카카오+Apple,
+  회의 2026-10-08) + **이메일·비밀번호 로그인**(2026-10-15 추가: 스토어 심사 접근과 간편 로그인을 못 쓰는
+  사람용. 가입 확인 메일 없음(autoconfirm), 비밀번호 재설정 메일은 SMTP가 없어 아직 없음 — 화면은
+  `EmailLoginScreen`, 입력 검사·오류 문구는 `lib/authHelpers.ts`). 전화번호 로그인은 없다.
+  1분 점검은 로그인 없이 되고, 결과 저장·알람부터 로그인한다(처음이면 동의 화면). 로그인 계정 하나에 환자 행 하나(`patients.user_id`).
   로그인은 `lib/auth.ts`, 내 환자·로그아웃·계정 삭제는 `lib/account.ts`에 가둔다.
   **카카오는 Supabase의 카카오 로그인(provider kakao)을 쓰지 않는다** — 그 기능은 `account_email`을
   늘 요청하는데 우리 카카오 앱은 비즈 앱이 아니라 KOE205로 막힌다(2026-10-09, 카카오 콘솔·Supabase 설정은

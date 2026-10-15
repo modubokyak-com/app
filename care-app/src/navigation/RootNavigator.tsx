@@ -10,6 +10,7 @@ import { resolveSignedIn } from "./startup";
 import { AlarmRouteParams, alarmRouteFromData } from "../lib/alarmPayload";
 import { IntroScreen } from "../screens/IntroScreen";
 import { LoginScreen } from "../screens/LoginScreen";
+import { EmailLoginScreen } from "../screens/EmailLoginScreen";
 import { ConsentScreen } from "../screens/ConsentScreen";
 import { AccountScreen } from "../screens/AccountScreen";
 import { QuickCheckHistoryScreen } from "../screens/QuickCheckHistoryScreen";
@@ -104,6 +105,7 @@ export function RootNavigator() {
     >
       <Stack.Screen name="Intro" component={IntroScreen} initialParams={introParams} />
       <Stack.Screen name="Login" component={LoginScreen} />
+      <Stack.Screen name="EmailLogin" component={EmailLoginScreen} />
       <Stack.Screen name="Consent" component={ConsentScreen} />
       <Stack.Screen name="AlarmPrompt" component={AlarmPromptScreen} />
       <Stack.Screen name="Tabs" component={PatientTabs} />

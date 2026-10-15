@@ -8,14 +8,18 @@ import type { User } from "@supabase/supabase-js";
 import { supabase, isSupabaseConfigured, AUTH_STORAGE_KEY } from "./supabase";
 import {
   parseAuthCallback, isUserCanceled, formatAppleFullName, bytesToHex, kakaoAuthorizeUrl, parseKakaoSession,
+  normalizeEmail, validateEmailLogin, emailAuthErrorMessage,
 } from "./authHelpers";
 
 export { hasStoredSession } from "./supabase";
 export { displayNameFrom, loginProviderLabel, loginProviderOf } from "./authHelpers";
 
-// 간편 로그인 — 교체 가능한 좁은 경계 (회의 2026-10-08).
-// 안드로이드는 카카오만, iOS는 카카오 + Apple(App Store 가이드라인 4.8). 이메일·전화·비밀번호는 없다.
-// 화면은 이 파일의 함수만 쓴다. 브라우저·토큰 교환 세부는 여기 숨긴다.
+// 로그인 — 교체 가능한 좁은 경계 (회의 2026-10-08).
+// 간편 로그인: 안드로이드는 카카오, iOS는 카카오 + Apple(App Store 가이드라인 4.8).
+// 이메일·비밀번호 로그인(2026-10-15 추가): 스토어 심사자가 들어올 길과 카카오·Apple을 못 쓰는 사람용.
+//   Supabase Auth 이메일 제공자, 가입 확인 메일 없음(mailer_autoconfirm) — 가입하면 바로 세션이 온다.
+//   비밀번호 재설정 메일은 SMTP가 없어 아직 없다 — 화면에는 지원 이메일로 알려 달라는 안내만 둔다.
+// 전화번호 로그인은 없다. 화면은 이 파일의 함수만 쓴다. 브라우저·토큰 교환 세부는 여기 숨긴다.
 //
 // 카카오 흐름 — 직접 연동 + 세션 다리 (2026-10-09):
 //   앱 → kauth.kakao.com/oauth/authorize (scope=profile_nickname, state=무작위)
@@ -138,6 +142,49 @@ export async function signInWithApple(): Promise<AppleSignInResult> {
     if ((e as { code?: string })?.code === "ERR_REQUEST_CANCELED") return canceled();
     console.warn("auth: Apple 로그인 예외", (e as Error)?.message ?? e);
     return fail("Apple 로그인 중 문제가 생겼어요. 다시 시도해 주세요.");
+  }
+}
+
+// ── 이메일·비밀번호 ───────────────────────────────────────────────────────────
+// 화면 검사(validateEmailLogin)를 먼저 하고, 이메일은 다듬어(normalizeEmail) 보낸다.
+// Supabase 오류는 삼키지 않고 한국어로 바꿔(emailAuthErrorMessage) 돌려준다 — 화면이 Alert로 보인다.
+export async function signInWithEmail(email: string, password: string): Promise<SignInResult> {
+  if (!isSupabaseConfigured) return fail("로그인 설정이 없어요.");
+  const invalid = validateEmailLogin(email, password);
+  if (invalid) return fail(invalid);
+  try {
+    const { error } = await supabase.auth.signInWithPassword({ email: normalizeEmail(email), password });
+    if (error) {
+      console.warn("auth: 이메일 로그인 실패", error.status, error.code, error.message);
+      return fail(emailAuthErrorMessage(error, "login"));
+    }
+    return { ok: true };
+  } catch (e) {
+    console.warn("auth: 이메일 로그인 예외", (e as Error)?.message ?? e);
+    return fail("로그인하지 못했어요. " + NETWORK);
+  }
+}
+
+// 가입 — autoconfirm이라 세션이 바로 온다. 세션이 없으면(서버에서 확인 메일을 켠 경우) 가입은 됐으니
+// 로그인으로 다시 들어오라고 안내한다(확인 메일은 보낼 수 없어 서버 설정을 봐야 하는 상태).
+export async function signUpWithEmail(email: string, password: string): Promise<SignInResult> {
+  if (!isSupabaseConfigured) return fail("로그인 설정이 없어요.");
+  const invalid = validateEmailLogin(email, password);
+  if (invalid) return fail(invalid);
+  try {
+    const { data, error } = await supabase.auth.signUp({ email: normalizeEmail(email), password });
+    if (error) {
+      console.warn("auth: 이메일 가입 실패", error.status, error.code, error.message);
+      return fail(emailAuthErrorMessage(error, "signup"));
+    }
+    if (!data.session) {
+      console.warn("auth: 이메일 가입은 됐지만 세션이 없다(확인 메일 설정?)");
+      return fail("가입은 됐지만 로그인하지 못했어요. 「로그인」으로 다시 들어와 주세요.");
+    }
+    return { ok: true };
+  } catch (e) {
+    console.warn("auth: 이메일 가입 예외", (e as Error)?.message ?? e);
+    return fail("가입하지 못했어요. " + NETWORK);
   }
 }
 

@@ -78,21 +78,67 @@ export type AuthUserLike = {
   user_metadata?: Record<string, unknown> | null;
 };
 
-export type LoginProvider = "kakao" | "apple";
+export type LoginProvider = "kakao" | "apple" | "email";
 
 // 카카오 계정은 서버(?op=kakao-session)가 만들어 app_metadata.login = "kakao"로 표시한다. Supabase는 이 계정의
 // provider를 "email"로 적으므로 표시를 먼저 본다(app_metadata는 서버 키로만 쓸 수 있어 사용자가 꾸밀 수 없다).
 // Apple은 Supabase가 provider "apple"로 적는다.
+// 이메일·비밀번호로 직접 가입한 계정(2026-10-15)은 provider "email"이고 login 표시가 없다 — 그때만 "email".
 export function loginProviderOf(user: AuthUserLike | null | undefined): LoginProvider | null {
   const meta = user?.app_metadata;
   if (meta?.login === "kakao") return "kakao";
   const p = meta?.provider;
-  return p === "kakao" || p === "apple" ? p : null;
+  return p === "kakao" || p === "apple" || p === "email" ? p : null;
 }
 
 export function loginProviderLabel(user: AuthUserLike | null | undefined): string | null {
   const p = loginProviderOf(user);
-  return p === "kakao" ? "카카오" : p === "apple" ? "Apple" : null;
+  return p === "kakao" ? "카카오" : p === "apple" ? "Apple" : p === "email" ? "이메일" : null;
+}
+
+// ── 이메일·비밀번호 로그인 (2026-10-15: 스토어 심사 접근 + 간편 로그인을 못 쓰는 사람용) ────────
+// 입력 다듬기 — Supabase는 이메일을 소문자로 저장하므로 대소문자가 달라 두 계정이 되는 일을 막는다.
+export function normalizeEmail(s: string): string {
+  return (s ?? "").trim().toLowerCase();
+}
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+export const PASSWORD_MIN = 6;
+export const PASSWORD_TOO_SHORT = `비밀번호는 ${PASSWORD_MIN}자 이상이어야 해요.`;
+
+// 서버에 보내기 전 화면에서 거르는 검사. 어긋나면 한국어 안내 문구, 괜찮으면 null.
+export function validateEmailLogin(email: string, password: string): string | null {
+  const e = normalizeEmail(email);
+  if (!e) return "이메일을 입력해 주세요.";
+  if (!EMAIL_RE.test(e)) return "이메일 주소 형식이 맞지 않아요.";
+  if (!password) return "비밀번호를 입력해 주세요.";
+  if (password.length < PASSWORD_MIN) return PASSWORD_TOO_SHORT;
+  return null;
+}
+
+// Supabase Auth 오류 → 사용자 안내. 코드(code)가 있으면 그것을, 없으면(옛 supabase-js·게이트웨이 오류) 문구를 본다.
+// 비밀번호 재설정 메일은 SMTP가 없어 아직 못 보낸다 — 잘못된 비밀번호 안내에 재설정 길을 적지 않는다.
+export type AuthErrorLike = { message?: string; status?: number; code?: string } | null | undefined;
+
+export function emailAuthErrorMessage(err: AuthErrorLike, mode: "login" | "signup"): string {
+  const code = err?.code ?? "";
+  const msg = err?.message ?? "";
+  const status = err?.status;
+  if (code === "invalid_credentials" || /invalid login credentials/i.test(msg)) return "이메일 또는 비밀번호가 맞지 않아요.";
+  if (code === "user_already_exists" || code === "email_exists" || /already (been )?registered|already exists/i.test(msg)) {
+    return "이미 가입된 이메일이에요. 로그인해 주세요.";
+  }
+  if (code === "weak_password" || (/password/i.test(msg) && /at least|short|weak/i.test(msg))) return PASSWORD_TOO_SHORT;
+  if (code === "email_not_confirmed" || /not confirmed/i.test(msg)) return "이메일 확인이 아직 안 됐어요. 잠시 후 다시 시도해 주세요.";
+  if (code === "signup_disabled" || code === "email_provider_disabled" || /signups? (are )?not allowed|(logins|signups) are disabled/i.test(msg)) {
+    return "지금은 이메일 가입을 받지 않아요.";
+  }
+  if (status === 429 || code === "over_request_rate_limit" || code === "over_email_send_rate_limit" || /rate limit|too many/i.test(msg)) {
+    return "시도가 너무 많아요. 잠시 후 다시 해 주세요.";
+  }
+  return mode === "login"
+    ? "로그인하지 못했어요. 인터넷 연결을 확인하고 다시 시도해 주세요."
+    : "가입하지 못했어요. 인터넷 연결을 확인하고 다시 시도해 주세요.";
 }
 
 // 이름 칸 최대 길이 — 동의 화면 입력창(maxLength)과 같다.

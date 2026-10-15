@@ -1,6 +1,7 @@
 import {
   parseAuthCallback, isUserCanceled, displayNameFrom, loginProviderOf, loginProviderLabel,
   formatAppleFullName, bytesToHex, NAME_MAX, kakaoAuthorizeUrl, parseKakaoSession, KAKAO_SCOPE,
+  normalizeEmail, validateEmailLogin, emailAuthErrorMessage, PASSWORD_MIN,
 } from "../lib/authHelpers";
 
 describe("kakaoAuthorizeUrl — 카카오 로그인 창 주소", () => {
@@ -162,13 +163,113 @@ describe("loginProviderOf / loginProviderLabel", () => {
 
   it("login 표시가 카카오가 아니면 provider로만 판단한다", () => {
     expect(loginProviderOf({ app_metadata: { provider: "apple", login: "other" } })).toBe("apple");
-    expect(loginProviderOf({ app_metadata: { provider: "email", login: "apple" } })).toBeNull();
+    // login 표시가 "kakao"가 아니면 무시 — provider "email"은 이메일 가입 계정이다
+    expect(loginProviderOf({ app_metadata: { provider: "email", login: "apple" } })).toBe("email");
+  });
+
+  it("이메일·비밀번호로 직접 가입한 계정 — provider email, login 표시 없음", () => {
+    const u = { app_metadata: { provider: "email", providers: ["email"] } };
+    expect(loginProviderOf(u)).toBe("email");
+    expect(loginProviderLabel(u)).toBe("이메일");
+  });
+
+  it("카카오 표시(login: kakao)는 provider email보다 먼저다 — 카카오 계정이 이메일로 보이면 안 된다", () => {
+    expect(loginProviderOf({ app_metadata: { provider: "email", login: "kakao" } })).toBe("kakao");
+    expect(loginProviderLabel({ app_metadata: { provider: "email", login: "kakao" } })).toBe("카카오");
   });
 
   it("모르는 수단·로그인 안 함은 null", () => {
-    expect(loginProviderLabel({ app_metadata: { provider: "email" } })).toBeNull();
+    expect(loginProviderLabel({ app_metadata: { provider: "google" } })).toBeNull();
     expect(loginProviderLabel(null)).toBeNull();
     expect(loginProviderOf({})).toBeNull();
+    expect(loginProviderOf({ app_metadata: {} })).toBeNull();
+  });
+});
+
+describe("normalizeEmail", () => {
+  it("앞뒤 공백을 지우고 소문자로", () => {
+    expect(normalizeEmail("  Play-Review@ModuBokyak.com ")).toBe("play-review@modubokyak.com");
+    expect(normalizeEmail("")).toBe("");
+    expect(normalizeEmail("   ")).toBe("");
+  });
+});
+
+describe("validateEmailLogin — 서버에 보내기 전 화면 검사", () => {
+  it("이메일이 비었으면", () => {
+    expect(validateEmailLogin("", "123456")).toBe("이메일을 입력해 주세요.");
+    expect(validateEmailLogin("   ", "123456")).toBe("이메일을 입력해 주세요.");
+  });
+  it("이메일 모양이 아니면", () => {
+    expect(validateEmailLogin("abc", "123456")).toBe("이메일 주소 형식이 맞지 않아요.");
+    expect(validateEmailLogin("a@b", "123456")).toBe("이메일 주소 형식이 맞지 않아요.");
+    expect(validateEmailLogin("a b@c.com", "123456")).toBe("이메일 주소 형식이 맞지 않아요.");
+    expect(validateEmailLogin("a@@c.com", "123456")).toBe("이메일 주소 형식이 맞지 않아요.");
+  });
+  it("비밀번호가 비었으면 / 6자 미만이면", () => {
+    expect(validateEmailLogin("a@b.co", "")).toBe("비밀번호를 입력해 주세요.");
+    expect(validateEmailLogin("a@b.co", "12345")).toBe("비밀번호는 6자 이상이어야 해요.");
+    expect(PASSWORD_MIN).toBe(6);
+  });
+  it("이메일을 먼저 본다(둘 다 틀리면 이메일 안내)", () => {
+    expect(validateEmailLogin("", "")).toBe("이메일을 입력해 주세요.");
+    expect(validateEmailLogin("bad", "")).toBe("이메일 주소 형식이 맞지 않아요.");
+  });
+  it("괜찮으면 null — 대문자·앞뒤 공백 이메일도 통과", () => {
+    expect(validateEmailLogin("a@b.co", "123456")).toBeNull();
+    expect(validateEmailLogin("  Play-Review@ModuBokyak.com ", "abcdef")).toBeNull();
+  });
+});
+
+describe("emailAuthErrorMessage — Supabase Auth 오류를 한국어로", () => {
+  it("비밀번호·이메일 불일치", () => {
+    expect(emailAuthErrorMessage({ code: "invalid_credentials", message: "Invalid login credentials", status: 400 }, "login"))
+      .toBe("이메일 또는 비밀번호가 맞지 않아요.");
+    // 옛 supabase-js: code 없이 문구만
+    expect(emailAuthErrorMessage({ message: "Invalid login credentials" }, "login")).toBe("이메일 또는 비밀번호가 맞지 않아요.");
+  });
+  it("이미 가입된 이메일", () => {
+    expect(emailAuthErrorMessage({ code: "user_already_exists", message: "User already registered" }, "signup"))
+      .toBe("이미 가입된 이메일이에요. 로그인해 주세요.");
+    expect(emailAuthErrorMessage({ code: "email_exists", message: "x" }, "signup")).toBe("이미 가입된 이메일이에요. 로그인해 주세요.");
+    expect(emailAuthErrorMessage({ message: "User already registered" }, "signup")).toBe("이미 가입된 이메일이에요. 로그인해 주세요.");
+    expect(emailAuthErrorMessage({ message: "A user with this email address has already been registered" }, "signup"))
+      .toBe("이미 가입된 이메일이에요. 로그인해 주세요.");
+    expect(emailAuthErrorMessage({ message: "email already exists" }, "signup")).toBe("이미 가입된 이메일이에요. 로그인해 주세요.");
+  });
+  it("약한(짧은) 비밀번호", () => {
+    expect(emailAuthErrorMessage({ code: "weak_password", message: "Password should be at least 6 characters." }, "signup"))
+      .toBe("비밀번호는 6자 이상이어야 해요.");
+    expect(emailAuthErrorMessage({ message: "Password should be at least 6 characters" }, "signup")).toBe("비밀번호는 6자 이상이어야 해요.");
+    expect(emailAuthErrorMessage({ message: "password is too short" }, "signup")).toBe("비밀번호는 6자 이상이어야 해요.");
+    expect(emailAuthErrorMessage({ message: "Password is too weak" }, "signup")).toBe("비밀번호는 6자 이상이어야 해요.");
+  });
+  it("이메일 확인 전(autoconfirm이 꺼져 있을 때)", () => {
+    expect(emailAuthErrorMessage({ code: "email_not_confirmed", message: "Email not confirmed" }, "login"))
+      .toBe("이메일 확인이 아직 안 됐어요. 잠시 후 다시 시도해 주세요.");
+    expect(emailAuthErrorMessage({ message: "Email not confirmed" }, "login"))
+      .toBe("이메일 확인이 아직 안 됐어요. 잠시 후 다시 시도해 주세요.");
+  });
+  it("가입·이메일 제공자가 꺼져 있을 때", () => {
+    expect(emailAuthErrorMessage({ code: "signup_disabled", message: "Signups not allowed for this instance" }, "signup"))
+      .toBe("지금은 이메일 가입을 받지 않아요.");
+    expect(emailAuthErrorMessage({ code: "email_provider_disabled", message: "Email logins are disabled" }, "signup"))
+      .toBe("지금은 이메일 가입을 받지 않아요.");
+    expect(emailAuthErrorMessage({ message: "Signups not allowed for this instance" }, "signup")).toBe("지금은 이메일 가입을 받지 않아요.");
+    expect(emailAuthErrorMessage({ message: "Email signup is disabled" }, "signup")).toBe("지금은 이메일 가입을 받지 않아요.");
+  });
+  it("시도 횟수 제한", () => {
+    expect(emailAuthErrorMessage({ status: 429, message: "x" }, "login")).toBe("시도가 너무 많아요. 잠시 후 다시 해 주세요.");
+    expect(emailAuthErrorMessage({ message: "Request rate limit reached" }, "login")).toBe("시도가 너무 많아요. 잠시 후 다시 해 주세요.");
+    expect(emailAuthErrorMessage({ message: "Too many requests" }, "signup")).toBe("시도가 너무 많아요. 잠시 후 다시 해 주세요.");
+  });
+  it("모르는 오류·빈 오류는 모드별 일반 안내", () => {
+    expect(emailAuthErrorMessage({ message: "fetch failed" }, "login"))
+      .toBe("로그인하지 못했어요. 인터넷 연결을 확인하고 다시 시도해 주세요.");
+    expect(emailAuthErrorMessage({ message: "fetch failed" }, "signup"))
+      .toBe("가입하지 못했어요. 인터넷 연결을 확인하고 다시 시도해 주세요.");
+    expect(emailAuthErrorMessage(null, "login")).toBe("로그인하지 못했어요. 인터넷 연결을 확인하고 다시 시도해 주세요.");
+    expect(emailAuthErrorMessage(undefined, "signup")).toBe("가입하지 못했어요. 인터넷 연결을 확인하고 다시 시도해 주세요.");
+    expect(emailAuthErrorMessage({}, "login")).toBe("로그인하지 못했어요. 인터넷 연결을 확인하고 다시 시도해 주세요.");
   });
 });
 

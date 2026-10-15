@@ -10,10 +10,10 @@ import { colors, fontSizes, radii, spacing, minTouch } from "../theme/tokens";
 
 const PRIVACY_ART = require("../../assets/illustrations/privacy-lock.png");
 
-// 실제 수집·이용 범위를 그대로 적는다. 앱이 하지 않는 일(제3자 제공, 광고 등)은
-// 하지 않는다고 명시한다. 웹 방침 https://modubokyak.com/privacy/ (modubokyak-com/web 저장소,
-// 원본은 store-assets/common/개인정보처리방침.html)과 같은 내용이어야 한다(스토어 심사에서
-// 앱 안 문구와 웹 방침이 어긋나면 반려된다) — 한쪽을 고치면 다른 쪽도 고친다.
+// 실제 수집·이용 범위를 그대로 적는다(문구는 lib/privacyPolicy.ts). 앱이 하지 않는 일(제3자 제공, 광고 등)은
+// 하지 않는다고 명시한다. 공개 웹 방침 https://modubokyak.com/privacy/ 은 별도 저장소 modubokyak-com/web 에 있다
+// (원본은 store-assets/common/개인정보처리방침.html) — 앱 안 문구와 같은 내용이어야 한다(스토어 심사에서
+// 어긋나면 반려된다). 한쪽을 고치면 다른 쪽도 고친다. 2026-10-15 이메일 로그인 항목을 앱 쪽에 더했으니 웹도 맞출 것.
 export function PrivacyScreen() {
   const nav = useNavigation<any>();
   // 동의 화면의 「보기」로 열었으면 아직 가입 전이라 지울 데이터가 없다 — 삭제 버튼을 숨긴다.

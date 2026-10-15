@@ -315,7 +315,12 @@ export function QuickCheckResultScreen() {
                 <Text style={styles.saveTitle} accessibilityRole="header" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
                   가입하면 복용 알람을 맞춰 드려요
                 </Text>
-                <SignInButtons kakaoLabel="카카오로 시작하기" busy={busy} onPress={(kind) => { void signIn(kind); }} />
+                <SignInButtons
+                kakaoLabel="카카오로 시작하기"
+                busy={busy}
+                onPress={(kind) => { void signIn(kind); }}
+                onEmail={() => { if (!isBusy()) nav.navigate("EmailLogin", { purpose: "save", medicines: names }); }}
+              />
               </View>
             )}
           </View>
@@ -333,7 +338,12 @@ export function QuickCheckResultScreen() {
               {/* 줄은 직접 나눈다 — 한글은 글자 단위로 줄이 바뀌어 단어가 쪼개진다 */}
               <Text style={styles.saveTitle} accessibilityRole="header">{"가입하면 이 결과를 저장하고\n언제든 다시 볼 수 있어요"}</Text>
               <Text style={styles.saveSub}>복용 알람도 함께 맞춰 드려요.</Text>
-              <SignInButtons kakaoLabel="카카오로 시작하기" busy={busy} onPress={(kind) => { void signIn(kind); }} />
+              <SignInButtons
+                kakaoLabel="카카오로 시작하기"
+                busy={busy}
+                onPress={(kind) => { void signIn(kind); }}
+                onEmail={() => { if (!isBusy()) nav.navigate("EmailLogin", { purpose: "save", medicines: names }); }}
+              />
             </View>
             <BigButton label="복용분석 다시하기" variant="secondary" onPress={recheck} disabled={busy !== null} />
           </View>
