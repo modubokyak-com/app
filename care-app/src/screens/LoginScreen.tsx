@@ -28,7 +28,7 @@ const COPY: Record<LoginPurpose, { title: string; sub: string }> = {
     sub: "로그인하면 휴대폰을 바꿔도 점검 결과와 알람이 그대로 남아요.",
   },
   skip: {
-    title: IOS ? "카카오나 Apple로 간편하게 시작해요" : "카카오로 간편하게 시작해요",
+    title: IOS ? "카카오나 Apple로\n간편하게 시작해요" : "카카오로\n간편하게 시작해요",
     sub: "로그인하면 약 알람과 복약 기록을 모아 둘 수 있어요.",
   },
   returning: {
