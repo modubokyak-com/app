@@ -22,6 +22,9 @@ it("does not claim Apple email collection or universal immediate deletion", () =
   expect(policyText).not.toContain("즉시 삭제");
   // 이용 통계는 90일 자동 삭제(supabase/migrate-usage-retention.sql) — 방침과 서버 작업이 같은 숫자여야 한다.
   expect(policyText).toContain("90일이 지나면 서버에서 자동으로 삭제");
+  // expo-updates가 설치 식별값·오류 정보를 보낸다 — 웹 방침 제2조·제7조와 같은 고지.
+  expect(policyText).toContain("설치별 식별값");
+  expect(policyText).toContain("Expo (650 Industries, Inc., 미국)");
   expect(policyText).not.toContain("복구할 수 없습니다");
 });
 
@@ -33,5 +36,5 @@ it("lists the email login data and the password-storage note (2026-10-15)", () =
 });
 
 it("matches the deployed policy effective date under review", () => {
-  expect(PRIVACY_POLICY_EFFECTIVE_DATE).toBe("2026년 10월 11일");
+  expect(PRIVACY_POLICY_EFFECTIVE_DATE).toBe("2026년 10월 15일");
 });

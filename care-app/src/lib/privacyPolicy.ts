@@ -2,7 +2,7 @@ export type PrivacyPolicySection = { title: string; body: string[] };
 
 // 공개 웹 방침(https://modubokyak.com/privacy/)의 현재 시행일과 맞춘다.
 // 법무 검토로 웹 방침이 바뀌면 앱 문구와 함께 갱신한다.
-export const PRIVACY_POLICY_EFFECTIVE_DATE = "2026년 10월 11일";
+export const PRIVACY_POLICY_EFFECTIVE_DATE = "2026년 10월 15일";
 
 export const PRIVACY_POLICY_INTRO =
   "모두의 복약은 복약 관리에 필요한 정보만 처리합니다. 서버로 보내는 정보는 암호화된 연결로 전송하며, 보관 여부는 아래 항목별 설명을 따릅니다.";
@@ -30,6 +30,7 @@ export const PRIVACY_POLICY_SECTIONS: PrivacyPolicySection[] = [
       "· 이메일 로그인: 이메일 주소, 비밀번호 (비밀번호는 암호화되어 저장되며 저희도 볼 수 없습니다)",
       "· 동의 기록 (동의한 항목과 시각)",
       "· 앱 사용 기록 (알람이 울린 시각, 응답, 알람 설정을 마쳤는지 — 통계용)",
+      "· 앱 업데이트 확인 때 자동 전송: 설치별 식별값과, 직전 실행이 실패한 경우 오류 정보 (Expo 서버로 보냅니다. 광고 식별자가 아니며 광고에 쓰지 않습니다)",
       "",
       "생년월일, 성별, 전화번호, 위치 정보는 받지 않습니다.",
       "마이크를 쓰지 않으며, 목소리를 녹음하거나 전송하지 않습니다.",
@@ -61,6 +62,7 @@ export const PRIVACY_POLICY_SECTIONS: PrivacyPolicySection[] = [
       "· OpenAI — 선택한 사진의 글자 인식과 약 설명 생성",
       "· 카카오 — 카카오 로그인",
       "· Apple — Apple로 로그인 (iPhone)",
+      "· Expo (650 Industries, Inc., 미국) — 앱 업데이트 전달과 오류 원인 확인 (설치 식별값, 오류 정보)",
     ],
   },
   {
@@ -69,6 +71,7 @@ export const PRIVACY_POLICY_SECTIONS: PrivacyPolicySection[] = [
       "계정에 연결된 정보는 서비스를 이용하는 동안 보관합니다.",
       "아래 '모든 데이터 삭제'(또는 계정 관리의 '계정 삭제') 요청이 서버에서 성공하면 계정에 연결된 이름, 일정, 복약 기록, 알람 이벤트, 점검 결과와 로그인 계정을 삭제하고 기기의 앱 데이터와 예약 알람도 정리합니다.",
       "앱 사용 기록(알람이 울린 시각·응답, 알람 설정 완료 통계)은 90일이 지나면 서버에서 자동으로 삭제됩니다.",
+      "앱 업데이트 기능이 보낸 설치 식별값과 오류 정보는 Expo 서버에 남으며, 앱 안의 계정 삭제로는 지워지지 않습니다.",
       "사용자를 식별하는 값 없이 집계되는 알람 설정 완료 통계는 계정에 연결되지 않아 계정 삭제로는 지워지지 않고, 위 90일 자동 삭제로만 지워집니다.",
     ],
   },
