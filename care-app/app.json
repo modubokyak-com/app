@@ -27,7 +27,7 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.modoobokyak.app",
       "usesAppleSignIn": true,
-      "buildNumber": "36",
+      "buildNumber": "39",
       "bitcode": false,
       "infoPlist": {
         "NSCameraUsageDescription": "약 봉투를 촬영해 복약 정보를 자동으로 등록하기 위해 카메라를 사용합니다.",
