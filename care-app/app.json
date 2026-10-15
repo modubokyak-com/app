@@ -45,7 +45,7 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "versionCode": 16,
+      "versionCode": 17,
       "permissions": [
         "android.permission.ACCESS_NETWORK_STATE",
         "android.permission.CAMERA",
