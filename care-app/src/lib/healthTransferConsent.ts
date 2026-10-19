@@ -2,7 +2,9 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Alert } from "react-native";
 import { getPatientId } from "./storage";
 
-export type HealthTransferScope = "product-search" | "quick-check" | "photo-ocr" | "drug-info";
+// 2026-10-19: 약 이름 검색·1분 점검·약 설명 조회의 동의창은 뺐다 — 자체 Supabase 서버(또는 약 이름 한 줄)만 가는 처리라
+// 방침 고지로 충분하고, 로그인 전 흐름에 동의창이 끼어 어색하다는 팀 의견(2026-10-16). 사진(OpenAI) 전송만 동의를 받는다.
+export type HealthTransferScope = "photo-ocr";
 
 export const HEALTH_TRANSFER_CONSENT_VERSION = "2026-10-10.1";
 const KEY = "care.healthTransferConsent.v1";
@@ -15,26 +17,6 @@ type ConsentStore = {
 };
 
 const DISCLOSURES: Record<HealthTransferScope, { title: string; message: string }> = {
-  "product-search": {
-    title: "약 이름 검색 동의",
-    message: [
-      "전송 항목: 검색창에 입력한 약·영양제 이름",
-      "목적: 공공 의약품·건강기능식품 목록에서 제품 찾기",
-      "수신자: (주)안팜이 이용하는 Supabase 서버",
-      "",
-      "동의하지 않으면 검색어를 전송하지 않으며 직접 입력할 수 있습니다.",
-    ].join("\n"),
-  },
-  "quick-check": {
-    title: "복용점검 정보 전송 동의",
-    message: [
-      "전송 항목: 선택한 약·영양제 이름, 연령대, 선택한 건강 상태",
-      "목적: 복용 조합과 주의사항 확인",
-      "수신자: (주)안팜이 이용하는 Supabase 서버",
-      "",
-      "동의하지 않으면 서버로 전송하지 않으며 입력 초안은 이 기기에 남습니다.",
-    ].join("\n"),
-  },
   "photo-ocr": {
     title: "약 사진 전송 동의",
     message: [
@@ -43,16 +25,6 @@ const DISCLOSURES: Record<HealthTransferScope, { title: string; message: string 
       "수신자: (주)안팜이 이용하는 Supabase 서버·Edge Function 및 OpenAI",
       "",
       "동의하지 않으면 사진을 전송하지 않습니다.",
-    ].join("\n"),
-  },
-  "drug-info": {
-    title: "약 설명 조회 동의",
-    message: [
-      "전송 항목: 현재 화면의 약 이름",
-      "목적: 참고용 약 설명 생성",
-      "수신자: (주)안팜이 이용하는 Supabase Edge Function 및 OpenAI",
-      "",
-      "동의하지 않으면 약 이름을 전송하지 않습니다.",
     ].join("\n"),
   },
 };
@@ -84,6 +56,9 @@ async function currentSubject(): Promise<string> {
     return ANONYMOUS_SUBJECT;
   }
 }
+
+// 남아 있는 동의 범위 목록 — 테스트와 문서가 참조한다.
+export const DISCLOSURE_SCOPES: Readonly<Record<HealthTransferScope, true>> = { "photo-ocr": true };
 
 export function healthTransferDisclosure(scope: HealthTransferScope): { title: string; message: string } {
   return DISCLOSURES[scope];

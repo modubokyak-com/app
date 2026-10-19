@@ -211,8 +211,6 @@ export function QuickCheckInputScreen() {
     nextBusy.current = true;
     setSaving(true);
     try {
-      const consented = await requestHealthTransferConsent("quick-check");
-      if (!consented) return;
       // 초안만 저장하고 판정 화면으로 — 환자 레코드는 결과를 저장할 때(로그인·동의) 만든다.
       try {
         await saveDraft(draft);
@@ -373,7 +371,6 @@ function SearchPanel({ onPick, onClose }: { onPick: (name: string) => void; onCl
   const [hits, setHits] = useState<ProductHit[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [unavailable, setUnavailable] = useState(false);
-  const [consentDenied, setConsentDenied] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const seq = useRef(0);
 
@@ -382,12 +379,8 @@ function SearchPanel({ onPick, onClose }: { onPick: (name: string) => void; onCl
     const mine = ++seq.current;
     const text = q.trim();
     if (text.length < 2) { setHits(null); setLoading(false); return; }
-    if (consentDenied) { setLoading(false); return; }
     setLoading(true);
     timer.current = setTimeout(async () => {
-      const consented = await requestHealthTransferConsent("product-search");
-      if (mine !== seq.current) return;
-      if (!consented) { setConsentDenied(true); setHits(null); setLoading(false); return; }
       const r = await searchProducts(text, 12);
       if (mine !== seq.current) return;
       if (!r.ready) { setUnavailable(true); setHits([]); }
@@ -395,7 +388,7 @@ function SearchPanel({ onPick, onClose }: { onPick: (name: string) => void; onCl
       setLoading(false);
     }, 350);
     return () => { if (timer.current) clearTimeout(timer.current); if (seq.current === mine) seq.current += 1; };
-  }, [q, consentDenied]);
+  }, [q]);
 
   return (
     <View style={styles.panel}>
@@ -414,12 +407,6 @@ function SearchPanel({ onPick, onClose }: { onPick: (name: string) => void; onCl
         <View style={styles.center}><ActivityIndicator color={colors.primaryBlue} /><Text style={styles.guide}>찾는 중…</Text></View>
       ) : null}
       {!loading && q.trim().length < 2 ? <Text style={styles.guide}>두 글자 이상 입력해 주세요.</Text> : null}
-      {!loading && consentDenied ? (
-        <>
-          <Text style={styles.guide}>동의하지 않아 검색어를 전송하지 않았어요. 직접 입력하거나 동의 후 검색할 수 있어요.</Text>
-          <BigButton label="동의하고 검색" variant="secondary" onPress={() => setConsentDenied(false)} />
-        </>
-      ) : null}
       {!loading && hits !== null && unavailable ? (
         <Text style={styles.guide}>약 목록을 불러오지 못했어요. 인터넷 연결을 확인하거나 직접 입력해 주세요.</Text>
       ) : null}

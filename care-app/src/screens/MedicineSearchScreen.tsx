@@ -9,7 +9,6 @@ import { ScreenHeader } from "../components/ScreenHeader";
 import { IllustrationBanner } from "../components/IllustrationBanner";
 import { searchProducts, ProductHit } from "../lib/drugData";
 import { guessMedKind } from "../lib/medKind";
-import { requestHealthTransferConsent } from "../lib/healthTransferConsent";
 import { colors, fontSizes, spacing, radii, minTouch } from "../theme/tokens";
 
 const SEARCH_ART = require("../../assets/illustrations/medicine-search.png");
@@ -25,7 +24,6 @@ export function MedicineSearchScreen() {
   const [hits, setHits] = useState<ProductHit[] | null>(null); // null = 아직 검색 안 함
   const [loading, setLoading] = useState(false);
   const [unavailable, setUnavailable] = useState(false);
-  const [consentDenied, setConsentDenied] = useState(false);
   // 타이핑할 때마다 조회하면 요청이 쏟아진다 — 잠깐 멈췄을 때만 찾는다.
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const seq = useRef(0);
@@ -35,12 +33,8 @@ export function MedicineSearchScreen() {
     const mine = ++seq.current;
     const text = q.trim();
     if (text.length < 2) { setHits(null); setLoading(false); return; }
-    if (consentDenied) { setLoading(false); return; }
     setLoading(true);
     timer.current = setTimeout(async () => {
-      const consented = await requestHealthTransferConsent("product-search");
-      if (mine !== seq.current) return;
-      if (!consented) { setConsentDenied(true); setHits(null); setLoading(false); return; }
       const r = await searchProducts(text, 20);
       if (mine !== seq.current) return; // 늦게 도착한 이전 검색 결과는 버린다
       if (!r.ready) { setUnavailable(true); setHits([]); }
@@ -48,7 +42,7 @@ export function MedicineSearchScreen() {
       setLoading(false);
     }, 350);
     return () => { if (timer.current) clearTimeout(timer.current); if (seq.current === mine) seq.current += 1; };
-  }, [q, consentDenied]);
+  }, [q]);
 
   function choose(name: string) {
     // 복용시점 등록(C-09)이 모든 등록 경로가 만나는 공통 관문이다.
@@ -85,16 +79,6 @@ export function MedicineSearchScreen() {
 
         {!loading && q.trim().length < 2 ? (
           <Text style={styles.guide}>약 이름을 두 글자 이상 입력해 주세요.</Text>
-        ) : null}
-
-        {!loading && consentDenied ? (
-          <View style={styles.escape}>
-            <Text style={styles.guide}>동의하지 않아 검색어를 전송하지 않았어요. 직접 입력하거나 동의 후 검색할 수 있어요.</Text>
-            <Pressable onPress={() => setConsentDenied(false)} style={({ pressed }) => [styles.escapeBtn, pressed && { opacity: 0.9 }]}>
-              <Search size={20} color={colors.primaryBlue} />
-              <Text style={styles.escapeText}>동의하고 검색</Text>
-            </Pressable>
-          </View>
         ) : null}
 
         {!loading && hits !== null && unavailable ? (

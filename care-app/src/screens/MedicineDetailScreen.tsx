@@ -14,7 +14,6 @@ import { fetchDrugInfo, lookupIngredients, fetchContraindications } from "../lib
 import { allIngredients, matchFindings, MedIngredients } from "../lib/interactions";
 import { getPatientId } from "../lib/storage";
 import { describeDoseRepeat, describeDoseTime } from "../lib/medSummary";
-import { requestHealthTransferConsent } from "../lib/healthTransferConsent";
 
 import { colors, fontSizes, spacing, radii, minTouch } from "../theme/tokens";
 const DETAIL_ART = require("../../assets/illustrations/medicine-detail-accent.png");
@@ -41,7 +40,6 @@ export function MedicineDetailScreen() {
   const [kind, setKindState] = useState<MedKind | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [infoLoading, setInfoLoading] = useState(false);
-  const [infoConsentDeclined, setInfoConsentDeclined] = useState(false);
   const [warnCount, setWarnCount] = useState<number | null>(null);
   // 일정 조회 실패. 없으면 "불러오는 중..."이 영원히 남는다 — 오류와 다시 시도를 보인다.
   const [loadFailed, setLoadFailed] = useState(false);
@@ -60,10 +58,6 @@ export function MedicineDetailScreen() {
       setKindState(resolveKind(s.medicine_name, await getKindMap()));
 
       // AI 설명 — 엣지 함수에 ?op=druginfo 가 배포돼 있어야 온다. 없으면 조용히 비운다.
-      setInfoConsentDeclined(false);
-      const consented = await requestHealthTransferConsent("drug-info");
-      if (!alive) return;
-      if (!consented) { setInfo(null); setInfoConsentDeclined(true); return; }
       setInfoLoading(true);
       const text = await fetchDrugInfo(s.medicine_name);
       if (alive) { setInfo(text); setInfoLoading(false); }
@@ -228,11 +222,6 @@ export function MedicineDetailScreen() {
               <ActivityIndicator color={colors.primaryBlue} />
               <Text style={styles.infoLoadingText}>약 정보를 찾고 있어요…</Text>
             </View>
-          ) : infoConsentDeclined ? (
-            <>
-              <Text style={styles.infoEmpty}>동의하지 않아 약 이름을 전송하지 않았어요.</Text>
-              <BigButton label="동의하고 약 설명 보기" variant="secondary" onPress={() => setAttempt((n) => n + 1)} />
-            </>
           ) : info ? (
             <Text style={styles.infoText}>{info}</Text>
           ) : (
