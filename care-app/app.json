@@ -27,7 +27,7 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.modoobokyak.app",
       "usesAppleSignIn": true,
-      "buildNumber": "42",
+      "buildNumber": "43",
       "bitcode": false,
       "infoPlist": {
         "NSCameraUsageDescription": "약 봉투를 촬영해 복약 정보를 자동으로 등록하기 위해 카메라를 사용합니다.",
@@ -45,7 +45,7 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "versionCode": 18,
+      "versionCode": 19,
       "permissions": [
         "android.permission.ACCESS_NETWORK_STATE",
         "android.permission.CAMERA",
