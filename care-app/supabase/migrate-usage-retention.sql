@@ -10,6 +10,8 @@
 --   두 번 실행해도 안전(cron.unschedule 뒤 다시 schedule).
 -- 적용: Supabase SQL Editor 또는 Management API로 실행. 2026-10-15 운영 DB 적용 완료.
 -- 확인: select jobname, schedule, active from cron.job;  select * from cron.job_run_details order by start_time desc limit 5;
+-- ⚠ 2026-10-25: migrate-web-events.sql 이 purge_usage_stats() 를 web_events 까지 지우는 판으로 바꿔 끼웠다(돌려주는 열 3개).
+--   그 뒤에 이 파일을 다시 돌리면 "cannot change return type" 으로 멈춘다 — 함수를 고칠 때는 migrate-web-events.sql 쪽을 고친다.
 
 create extension if not exists pg_cron;
 
