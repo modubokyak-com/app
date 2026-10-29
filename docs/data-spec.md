@@ -188,6 +188,23 @@ erDiagram
 | `tap_interrupt_count` | int |  |
 | `created_at` | timestamptz |  |
 
+#### `web_events` — 웹사이트 이용 통계(insert 전용, 2026-10-25 추가). 계정 FK 없음.
+
+웹(modubokyak.com)의 `stats.js` 가 anon 으로 넣는다. 정의·권한·90일 삭제는 `migrate-web-events.sql`, 조회는 `web-events-funnel.sql`,
+대시보드용 집계는 `stats.web_visitor_days`(한 줄 = 한 사람의 하루, API 비노출 스키마). 이 절은 0.1절 실측(2026-09-17) 이후라 위 행 수 표에는 없다.
+
+| 컬럼 | 타입 | 설명 |
+|---|---|---|
+| `id` | bigint identity | PK |
+| `created_at` | timestamptz | 서버가 정한다(anon 은 이 컬럼 insert 권한 없음) |
+| `visitor_id` | uuid | 브라우저 번호 — 브라우저 localStorage 의 무작위 값, 90일마다 새로 |
+| `visit_id` | uuid | 방문 번호 — 30분 무동작·다른 경로 진입 시 새로 |
+| `page` | text | home · check · app |
+| `event` | text | view · check_supp · check_rx · check_analyzing · check_report · check_failed · parent_start · share · store_android · store_ios |
+| `flow` | text | self · parent (점검 단계만) |
+| `entry` | text | direct · invite(#invite=1) · pharmacy(/check/senior/) |
+| `ref_host` | text | 다른 사이트에서 왔을 때 도메인만 |
+
 #### `quick_check_results` — 1분 복용 점검 결과 한 건(insert 전용).
 
 | 컬럼 | 타입 | 설명 |
