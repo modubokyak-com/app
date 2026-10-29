@@ -18,6 +18,7 @@ import {
 import { loadDraft, saveDraft, saveDraftInputs } from "../lib/quickCheckDraft";
 import { requestHealthTransferConsent } from "../lib/healthTransferConsent";
 import { getPatientId, getPatientName } from "../lib/storage";
+import { trackApp } from "../lib/appStats";
 import { createHydrationGate } from "../lib/quickCheckHydration";
 import { colors, fontSizes, spacing, radii, minTouch, shadows } from "../theme/tokens";
 
@@ -31,6 +32,8 @@ type Panel = "none" | "search" | "manual" | "photo";
 
 const STEP_ORDER: Step[] = ["supplements", "medicines", "profile"];
 const STEP_LABEL: Record<Step, string> = { supplements: "1/3 영양제", medicines: "2/3 복용약", profile: "3/3 기본 정보" };
+// 단계별 이용 통계 이벤트 — 어느 단계에서 멈추는지 보려는 것(고른 내용은 보내지 않는다).
+const STEP_EVENT = { supplements: "check_supp", medicines: "check_rx", profile: "check_profile" } as const;
 
 const LIST_META: Record<"supplements" | "medicines", {
   title: string; sub: string; presets: readonly string[]; none: string; searchLabel: string; photoLabel: string;
@@ -69,6 +72,9 @@ export function QuickCheckInputScreen() {
   const scrollRef = useRef<ScrollView>(null);
   const latestInputsRef = useRef({ supplements, medicines, profile: { age, conditions } });
   latestInputsRef.current = { supplements, medicines, profile: { age, conditions } };
+
+  // 단계가 보일 때마다(첫 화면 포함, 「이전」으로 돌아온 때도) 센다.
+  useEffect(() => { trackApp(STEP_EVENT[step]); }, [step]);
 
   // 검색·직접 입력 패널은 스크롤 맨 아래에 붙는다(칩·버튼 아래). 열리면 끝까지 스크롤해
   // 패널(이름 검색·직접 입력·사진 추가)이 열리면 화면에 들어오게 스크롤하고, 키보드가 올라와
