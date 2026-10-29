@@ -205,6 +205,34 @@ erDiagram
 | `entry` | text | direct · invite(#invite=1) · pharmacy(/check/senior/) |
 | `ref_host` | text | 다른 사이트에서 왔을 때 도메인만 |
 
+#### `app_events` — 앱 이용 통계(insert 전용, 2026-10-29 추가). 계정 FK 없음.
+
+앱(`care-app/src/lib/appStats.ts`)이 로그인 전에는 `anon`, 로그인 뒤에는 `authenticated` 로 **insert 만** 한다(둘 다 SELECT 권한 없음 — 앱은 `.select()` 를 붙이지 않는다).
+목적은 설치 → 인트로 → 1분 점검 단계 → 결과 → 로그인 → 동의(가입) → 첫 알람 설정까지의 퍼널과 화면별 조회. 실패해도 앱 동작을 막지 않는 베스트에포트 기록이다.
+정의·권한·90일 삭제는 `care-app/supabase/migrate-app-events.sql`, 조회는 `care-app/supabase/app-events-funnel.sql`. 이 절은 0.1절 실측(2026-09-17) 이후라 위 행 수 표에는 없다.
+앱 안 「개인정보 설정」에서 「앱 이용 통계 보내기」를 끌 수 있고, 끄면 보내지 않으며 기기에 저장된 설치 번호도 지운다(`care.stats.off`, `care.stats.device`).
+
+| 컬럼 | 타입 | 설명 |
+|---|---|---|
+| `id` | bigint identity | PK |
+| `created_at` | timestamptz | 서버가 정한다(insert 권한 없음) |
+| `device_id` | uuid | 설치 번호 — 앱이 만든 무작위 값, 기기 AsyncStorage 에만 있고 90일마다 새로. 계정·환자 id 와 잇지 않는다 |
+| `session_id` | uuid | 실행 번호 — 앱을 켤 때마다, 그리고 30분 넘게 쉬다 앞으로 돌아왔을 때 새로 |
+| `event` | text | first_open · app_open · screen · intro_cta · check_supp · check_rx · check_profile · check_report · check_failed · login_tap · login_done · signup_done · alarm_set · alarm_skip |
+| `screen` | text | `screen` 이벤트의 라우트 이름만(영문 1~40자). 다른 이벤트는 null |
+| `purpose` | text | 로그인을 묻는 까닭 save · skip · returning (`LoginPurpose`) — 로그인·동의 화면 조회와 로그인 이벤트에서 |
+| `method` | text | 로그인 방법 kakao · apple · email (`login_tap`·`login_done`) |
+| `is_new` | boolean | 처음 가입인가 (`login_done`·`signup_done`). 그 밖은 null |
+| `signed_in` | boolean | 보낼 때 기기에 환자 id(로그인 상태)가 있었나. id 값 자체는 보내지 않는다 |
+| `platform` | text | ios · android |
+| `app_version` | text | 앱 버전(예: 1.0.0), 모양이 맞지 않으면 null |
+
+- 이벤트 시점: `first_open` 이 설치의 첫 실행(기기 표시 `care.stats.installed`), `app_open` 매 실행·30분 넘게 쉬고 복귀, `screen` 화면 전환, `intro_cta` 인트로 시작 장,
+  `check_supp`/`check_rx`/`check_profile` 점검 1·2·3/3 단계 화면, `check_report` 새로 판정해 결과로 넘어갈 때, `check_failed` 점검 실패 화면, `login_tap` 로그인 시도,
+  `login_done` 로그인 성공(`is_new` = 동의 화면으로 가는가), `signup_done` 동의 저장 성공, `alarm_set` 알람 저장 성공, `alarm_skip` 알람 설정을 건너뜀.
+- 남기지 않는 것: 약·영양제 이름, 연령대, 건강 상태, 점검 결과, 이름, 계정·환자 id, 일정·알람 내용, IP 주소.
+- 보관: 90일이 지난 행은 서버가 자동으로 삭제한다. 사용자를 식별하는 값이 없어 계정 삭제로는 지워지지 않고, 이 90일 삭제로만 지워진다(앱 개인정보 처리방침 제1·5조).
+
 #### `quick_check_results` — 1분 복용 점검 결과 한 건(insert 전용).
 
 | 컬럼 | 타입 | 설명 |

@@ -10,6 +10,7 @@ import { runServerCheck, serverToFindings, ServerCheckResult } from "../lib/quic
 import { serverConditionInput } from "../lib/conditionAliases";
 import { loadDraft, saveDraft, commitQuickCheckDraft, resultParamsOf } from "../lib/quickCheckDraft";
 import { getPatientId } from "../lib/storage";
+import { trackApp } from "../lib/appStats";
 import { colors, fontSizes, spacing, radii, shadows } from "../theme/tokens";
 
 // 점검 중 화면 — 판정을 돌리면서 4단계 체크리스트를 순서대로 켠다.
@@ -76,6 +77,8 @@ export function QuickCheckAnalyzingScreen() {
   }, []);
 
   const run = useCallback(async (alive: () => boolean) => {
+    // 실패 화면에 들어설 때마다 센다(다시 시도해 또 실패하면 또 센다).
+    const fail = (why: "network" | "storage") => { trackApp("check_failed"); setFailed(why); };
     setFailed(null);
     setDone(0);
     // 체크리스트는 시간에 맞춰 켠다(조회 진행과 무관 — 조회는 보통 더 빨리 끝난다).
@@ -87,7 +90,7 @@ export function QuickCheckAnalyzingScreen() {
       const r = await analyze(draft);
       if (!alive()) return;
       // 실패는 바로 알린다 — 최소 표시 시간은 성공했을 때만 채운다.
-      if (!r.ok) { timers.forEach(clearTimeout); setFailed("network"); return; }
+      if (!r.ok) { timers.forEach(clearTimeout); fail("network"); return; }
       try {
         await saveDraft({
           ...draft, findings: r.findings, unmatched: r.unmatched, durUnavailable: r.durUnavailable,
@@ -98,7 +101,7 @@ export function QuickCheckAnalyzingScreen() {
         });
       } catch {
         timers.forEach(clearTimeout);
-        if (alive()) setFailed("storage");
+        if (alive()) fail("storage");
         return;
       }
       // 서버 저장(로그인한 사람만). 실패는 여기서 삼킨다 — 초안이 기기에 남아 HomeScreen이 홈에
@@ -111,12 +114,14 @@ export function QuickCheckAnalyzingScreen() {
       const wait = Math.max(0, MIN_MS - (Date.now() - started));
       await new Promise((res) => setTimeout(res, wait));
       if (!alive()) return;
+      // 새로 판정해 결과 화면으로 넘어가는 순간 — 기록에서 결과를 다시 여는 것은 이 화면을 거치지 않아 세지 않는다.
+      trackApp("check_report");
       // commit이 초안의 판정 결과를 비웠으므로(입력은 남는다) 결과는 params로 넘긴다.
       // 저장 못 했으면 초안에 결과가 남아 있어 결과 화면이 초안에서 읽는다.
       nav.replace("QuickCheckResult", committed ? resultParamsOf(committed) : undefined);
     } catch {
       timers.forEach(clearTimeout);
-      if (alive()) setFailed("network");
+      if (alive()) fail("network");
     }
     return () => timers.forEach(clearTimeout);
   }, [nav]);

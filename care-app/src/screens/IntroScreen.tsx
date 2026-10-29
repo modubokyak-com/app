@@ -7,6 +7,7 @@ import { Check, Leaf, Package, Pill } from "lucide-react-native";
 import { Logo } from "../components/Logo";
 import { INTRO_SLIDES, SKIP_TARGET_INDEX, dotState, nextIndex, prevIndex } from "../lib/introSlides";
 import { setOnboarded } from "../lib/storage";
+import { trackApp } from "../lib/appStats";
 import { colors, fontSizes, minTouch, radii, shadows, spacing } from "../theme/tokens";
 
 // 인트로 — 브랜드 1장 → 온보딩 2장 → 시작 CTA, 총 4장을 한 화면에서 넘긴다.
@@ -74,6 +75,14 @@ export function IntroScreen() {
   const reduceMotion = useRef(false);
   const autoTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const leaving = useRef(false);
+  const ctaTracked = useRef(false);
+
+  // 시작 장(CTA)이 보이면 센다 — 처음부터 그 장으로 열린 경우(뒤로 돌아옴)도 포함. 장을 오가도 마운트당 한 번만.
+  useEffect(() => {
+    if (index !== SKIP_TARGET_INDEX || ctaTracked.current) return;
+    ctaTracked.current = true;
+    trackApp("intro_cta");
+  }, [index]);
 
   // 인사 TTS는 제거했다 (피드백 2026-09-03: 음성과 화면 문구가 달라 혼동을 준다).
 

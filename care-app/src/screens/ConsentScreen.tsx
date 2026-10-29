@@ -9,6 +9,7 @@ import { currentUser, displayNameFrom } from "../lib/auth";
 import { NAME_MAX } from "../lib/authHelpers";
 import { adoptPatient, createMyPatient, recordMyConsent, Consent } from "../lib/account";
 import { continueAfterLogin } from "../navigation/afterLogin";
+import { trackApp } from "../lib/appStats";
 import type { LoginPurpose } from "../navigation/types";
 import { colors, fontSizes, spacing, radii, minTouch, shadows } from "../theme/tokens";
 
@@ -71,6 +72,8 @@ export function ConsentScreen() {
         ? await recordMyConsent(existingPatientId, name.trim(), consent)
         : await createMyPatient(name.trim(), consent);
       await adoptPatient(mine);
+      // 동의를 서버에 남기고 환자를 앉힌 뒤 — 실패하면 여기까지 오지 않아 세지 않는다.
+      trackApp("signup_done", { purpose, isNew: !existingPatientId });
       await continueAfterLogin(nav, { purpose, medicines, isNew: !existingPatientId });
     } catch (e) {
       console.warn("Consent: 시작 실패", (e as Error)?.message ?? e);

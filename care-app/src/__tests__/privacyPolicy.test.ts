@@ -36,5 +36,14 @@ it("lists the email login data and the password-storage note (2026-10-15)", () =
 });
 
 it("matches the deployed policy effective date under review", () => {
-  expect(PRIVACY_POLICY_EFFECTIVE_DATE).toBe("2026년 10월 15일");
+  expect(PRIVACY_POLICY_EFFECTIVE_DATE).toBe("2026년 10월 30일");
+});
+
+it("discloses the anonymous in-app usage statistics and how to turn them off (2026-10-30)", () => {
+  expect(policyText).toContain("앱 이용 통계 (로그인 전후 모두)");
+  expect(policyText).toContain("계정과 잇지 않으며");
+  expect(policyText).toContain("「앱 이용 통계 보내기」를 끄면 보내지 않습니다");
+  // 목적·보관도 같이 고지한다 — 90일 자동 삭제는 서버의 purge와 같은 숫자여야 한다.
+  expect(policyText).toContain("앱 이용 통계는 어느 단계에서 어려워하시는지 살펴 앱을 고치는 데에만 씁니다");
+  expect(policyText).toContain("앱 이용 통계는 90일이 지나면 서버에서 자동으로 삭제");
 });

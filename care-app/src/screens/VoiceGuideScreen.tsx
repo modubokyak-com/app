@@ -16,6 +16,7 @@ import {
   medicinesAt, bumpSlotTime, bannerText, scheduleRows, ampm,
 } from "../lib/voiceGuideFlow";
 import { logGuideEvent } from "../lib/analytics";
+import { trackApp } from "../lib/appStats";
 import { colors, fontSizes, spacing, radii, shadows } from "../theme/tokens";
 
 // 복용 알람 설정 — 한 화면 (회의 2026-09-03·09-12: 4단계 → 1단계).
@@ -101,6 +102,7 @@ export function VoiceGuideScreen() {
       }
       if (!mounted.current) return;
       void logGuideEvent({ step: "done", ...stats.current });
+      trackApp("alarm_set");
       setSheetOpen(false);
       setStep("done");
       // 저장은 됐지만 알림 권한이 없으면 알람이 조용히 안 울린다 — 그 사실을 알린다.
@@ -131,6 +133,7 @@ export function VoiceGuideScreen() {
   function later() {
     if (savingRef.current) return;
     void logGuideEvent({ step: "skipped", ...stats.current });
+    trackApp("alarm_skip");
     goHome();
   }
 
@@ -142,6 +145,7 @@ export function VoiceGuideScreen() {
     if (savingRef.current) { e.preventDefault(); return; }
     if (step === "done") { e.preventDefault(); goHome(); return; }
     void logGuideEvent({ step: "skipped", ...stats.current });
+    trackApp("alarm_skip");
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }), [nav, step]);
   // iOS 스와이프는 beforeRemove로 막히지 않아 제스처 자체를 끈다.

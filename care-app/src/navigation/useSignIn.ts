@@ -4,6 +4,7 @@ import { useNavigation } from "@react-navigation/native";
 import { signInWithKakao, signInWithApple, signInWithEmail, signUpWithEmail } from "../lib/auth";
 import { adoptPatient, findMyPatient } from "../lib/account";
 import { continueAfterLogin } from "./afterLogin";
+import { trackApp } from "../lib/appStats";
 import type { LoginPurpose } from "./types";
 
 // 간편 로그인 버튼 종류. 이메일 로그인은 버튼이 아니라 입력 화면(EmailLoginScreen)이라 따로 둔다.
@@ -28,7 +29,8 @@ export function useSignIn(purpose: LoginPurpose, medicines?: string[]) {
   }, []);
 
   // 조회 실패는 "처음 가입"으로 넘기지 않는다(쓰던 사람에게 환자를 하나 더 만들게 된다).
-  async function afterSignIn(appleFullName: string | null): Promise<void> {
+  // method: 이용 통계(login_done)용 — 어느 길로 로그인했나.
+  async function afterSignIn(method: SignInBusy, appleFullName: string | null): Promise<void> {
     let mine;
     try {
       mine = await findMyPatient();
@@ -39,10 +41,13 @@ export function useSignIn(purpose: LoginPurpose, medicines?: string[]) {
     }
     if (mine?.consent) {
       await adoptPatient(mine);
+      // 환자를 기기에 앉힌 뒤에 센다 — 앞에서 실패했으면 로그인으로 세지 않고, signed_in도 true로 잡힌다.
+      trackApp("login_done", { method, purpose, isNew: false });
       await continueAfterLogin(nav, { purpose, medicines, isNew: false });
       return;
     }
     // 처음 가입 — 또는 옛 빌드에서 이어 붙은 계정이라 동의 기록이 없는 경우. 둘 다 동의 화면을 거친다.
+    trackApp("login_done", { method, purpose, isNew: true });
     nav.navigate("Consent", { purpose, medicines, appleFullName, existingPatientId: mine?.id });
   }
 
@@ -50,15 +55,16 @@ export function useSignIn(purpose: LoginPurpose, medicines?: string[]) {
     if (busyRef.current) return;
     busyRef.current = true;
     setBusy(kind);
+    trackApp("login_tap", { method: kind, purpose });
     try {
       if (kind === "kakao") {
         const r = await signInWithKakao();
         if (!r.ok) { if (!r.canceled && mounted.current) Alert.alert("카카오 로그인", r.message); return; }
-        await afterSignIn(null);
+        await afterSignIn("kakao", null);
       } else {
         const r = await signInWithApple();
         if (!r.ok) { if (!r.canceled && mounted.current) Alert.alert("Apple 로그인", r.message); return; }
-        await afterSignIn(r.appleFullName);
+        await afterSignIn("apple", r.appleFullName);
       }
     } catch (e) {
       console.warn("useSignIn: 로그인 후 처리 실패", (e as Error)?.message ?? e);
@@ -74,10 +80,11 @@ export function useSignIn(purpose: LoginPurpose, medicines?: string[]) {
     if (busyRef.current) return;
     busyRef.current = true;
     setBusy("email");
+    trackApp("login_tap", { method: "email", purpose });
     try {
       const r = mode === "login" ? await signInWithEmail(email, password) : await signUpWithEmail(email, password);
       if (!r.ok) { if (mounted.current) Alert.alert(mode === "login" ? "이메일 로그인" : "이메일 가입", r.message); return; }
-      await afterSignIn(null);
+      await afterSignIn("email", null);
     } catch (e) {
       console.warn("useSignIn: 이메일 로그인 후 처리 실패", (e as Error)?.message ?? e);
       if (mounted.current) Alert.alert("로그인하지 못했어요", "잠시 후 다시 시도해 주세요.");

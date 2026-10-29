@@ -17,6 +17,7 @@ import { doseSlot } from "./src/lib/schedule";
 import { rescheduleCachedAlarm, resyncAllAlarms } from "./src/lib/alarmSync";
 import { runLocalAlarmAction } from "./src/lib/alarmResponse";
 import { AlarmRouteParams, alarmRouteFromData } from "./src/lib/alarmPayload";
+import { startAppStats, trackScreen } from "./src/lib/appStats";
 import { applyPretendard } from "./src/theme/applyPretendard";
 import { colors } from "./src/theme/tokens";
 
@@ -60,6 +61,9 @@ export default function App() {
     applyPretendard();
     SplashScreen.hideAsync().catch(() => {});
   }, [fontsReady]);
+
+  // 앱 이용 통계 — 설치 번호·실행 번호를 잡고 first_open/app_open을 보낸다(꺼 둔 기기는 아무것도 보내지 않는다).
+  useEffect(() => { startAppStats(); }, []);
 
   useEffect(() => {
     ensureIOSCategory().catch(() => {});
@@ -141,7 +145,13 @@ export default function App() {
       <SafeAreaProvider>
         {/* 흰 배경에서 시간·배터리 등 상태바 글씨가 보이도록 어두운 색으로 고정 */}
         <StatusBar style="dark" />
-        <NavigationContainer ref={navRef} theme={navigationTheme}>
+        <NavigationContainer
+          ref={navRef}
+          theme={navigationTheme}
+          // 화면 조회 통계 — 처음 뜬 화면(onReady)과 이후 화면 전환(onStateChange)
+          onReady={() => trackScreen(navRef.getCurrentRoute())}
+          onStateChange={() => trackScreen(navRef.getCurrentRoute())}
+        >
           <RootNavigator />
         </NavigationContainer>
       </SafeAreaProvider>
